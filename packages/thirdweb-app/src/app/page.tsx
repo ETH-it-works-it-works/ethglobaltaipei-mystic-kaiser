@@ -5,6 +5,7 @@ import Story from "@/components/landing-page/Story";
 import Rarity from "@/components/landing-page/Rarity";
 import Collections from "@/components/landing-page/Collections";
 import Roadmap from "@/components/landing-page/Roadmap";
+import Footer from "@/components/landing-page/Footer";
 export default function Home() {
   return <div>
     <Navigation />
@@ -14,5 +15,6 @@ export default function Home() {
     <Collections />
     <Rarity />
     <Roadmap />
+    <Footer />
   </div>;
 }
