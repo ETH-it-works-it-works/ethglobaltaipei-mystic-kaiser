@@ -12,16 +12,13 @@ export default function Hero() {
           className="absolute bottom-32 left-0 md:block px-16 md:px-0 md:static"
         />
         <div className="flex flex-row items-center justify-center gap-6 w-full mb-12 mb:mb-0">
-
-            <hr className="lg:w-[200px] xl:w-[300px] h-[1.5px] bg-white " />
-
+          <hr className="lg:w-[200px] xl:w-[300px] h-[1.5px] bg-white " />
           <div className="text-sm md:text-3xl xl:text-4xl font-light opacity-80 text-center font-dark-mystic text-white">
-          Mystics of the Ancient Order
+            Mystics of the Ancient Order
           </div>
-            <hr className="lg:w-[200px] xl:w-[300px] h-[1.5px] bg-white" />
-
+          <hr className="lg:w-[200px] xl:w-[300px] h-[1.5px] bg-white" />
         </div>
       </div>
     </section>
   );
-} 
+}
