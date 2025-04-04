@@ -4,6 +4,7 @@ import About from "@/components/landing-page/About";
 import Story from "@/components/landing-page/Story";
 import Rarity from "@/components/landing-page/Rarity";
 import Collections from "@/components/landing-page/Collections";
+import Roadmap from "@/components/landing-page/Roadmap";
 export default function Home() {
   return <div>
     <Navigation />
@@ -12,5 +13,6 @@ export default function Home() {
     <Story />
     <Collections />
     <Rarity />
+    <Roadmap />
   </div>;
 }
