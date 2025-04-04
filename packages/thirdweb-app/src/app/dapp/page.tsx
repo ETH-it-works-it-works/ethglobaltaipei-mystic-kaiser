@@ -4,14 +4,31 @@ import React, { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { AiOutlineSwap } from "react-icons/ai";
 
 export default function Dapp() {
   const [selectedTab, setSelectedTab] = useState("home");
+  const [isEventCreator, setIsEventCreator] = useState(false);
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
 
   // Mock data for activities
-  const activities = [
+  const activities = isEventCreator ? [
+    {
+      id: "create",
+      title: "Create Event",
+      subtitle: "CREATE NEW EVENT",
+      image: "/dapp/story-bg1.png",
+      color: "bg-green-700"
+    },
+    {
+      id: "manage",
+      title: "Manage Event",
+      subtitle: "MANAGE EXISTING EVENTS",
+      image: "/dapp/event-bg.png",
+      color: "bg-red-700"
+    }
+  ] : [
     {
       id: "story",
       title: "Story Mode",
@@ -43,25 +60,34 @@ export default function Dapp() {
         {/* Left Sidebar - Character Info */}
         <div className="w-1/4 bg-black/40 backdrop-blur-sm rounded-xl p-4 flex flex-col">
           {/* Character Profile */}
-          <div className="flex items-center gap-4 border-b border-gray-600 pb-4">
+          <div className="flex items-center gap-4 border-b border-gray-600 pb-4 px-5">
             <div className="relative">
               <Image 
                 src="/profile.png" 
                 alt="Player Avatar" 
-                width={80} 
-                height={80} 
+                width={100} 
+                height={100} 
                 className="rounded-full border-2 border-yellow-500"
               />
-              <div className="absolute -bottom-2 -right-2 bg-yellow-500 text-black text-xs font-bold rounded-full w-8 h-8 flex items-center justify-center">
-                24
-              </div>
             </div>
             
-            <div>
+            <div className="flex flex-col w-full">
               <h2 className="text-2xl font-bold font-dark-mystic">
                 0x1234...5678
               </h2>
               <p className="text-gray-300 text-sm">ID: 0x12345678</p>
+            </div>
+
+            <div className="flex flex-col items-center">
+              <button 
+                onClick={() => setIsEventCreator(!isEventCreator)}
+                className="p-2 hover:bg-gray-800 rounded-full transition-colors"
+              >
+                <AiOutlineSwap className="text-white text-3xl" />
+              </button>
+              <span className="text-sm text-gray-300">
+                {isEventCreator ? "Event Creator" : "User"}
+              </span>
             </div>
           </div>
           
@@ -89,10 +115,10 @@ export default function Dapp() {
             </button>
             
             <button 
-              className={`flex items-center gap-3 p-3 rounded-lg transition-colors ${selectedTab === 'leaderboard' ? 'bg-purple-800' : 'hover:bg-gray-800'}`}
-              onClick={() => setSelectedTab('leaderboard')}
+              className={`flex items-center gap-3 p-3 rounded-lg transition-colors ${selectedTab === 'friends' ? 'bg-purple-800' : 'hover:bg-gray-800'}`}
+              onClick={() => setSelectedTab('friends')}
             >
-              <span className="font-medium">Leaderboard</span>
+              <span className="font-medium">Friends</span>
             </button>
           </div>
         </div>
@@ -113,8 +139,9 @@ export default function Dapp() {
                   height={300}
                   className="h-full w-full object-cover group-hover:scale-110 transition-transform duration-300"
                 />
-                <div className="absolute inset-0 bg-black/50 flex flex-col justify-end p-6">
-                  <h3 className="text-2xl font-bold mb-2">{activity.title}</h3>
+
+                <div className="absolute inset-0 bg-gradient-to-b from-transparent to-black/50 flex flex-col justify-end p-6">
+                  <h3 className="text-2xl font-bold mb-2 font-dark-mystic">{activity.title}</h3>
                   <p className="text-gray-300">{activity.subtitle}</p>
                 </div>
               </div>
