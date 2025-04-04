@@ -16,10 +16,10 @@ const darkMystic = localFont({
   display: "swap",
 });
 
+
 export const metadata: Metadata = {
-  title: "thirdweb SDK + Next starter",
-  description:
-    "Starter template for using thirdweb SDK with Next.js App router",
+  title: "Mystic Kaizer",
+  description: "Mystic Kaizer",
 };
 
 export default function RootLayout({
