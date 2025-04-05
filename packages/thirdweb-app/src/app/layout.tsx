@@ -17,9 +17,9 @@ const darkMystic = localFont({
 });
 
 export const metadata: Metadata = {
-  title: "Mystic Kaizer",
+  title: "thirdweb SDK + Next starter",
   description:
-    "The unique pvp game where you fight your friends to become the best mystic in the world",
+    "Starter template for using thirdweb SDK with Next.js App router",
 };
 
 export default function RootLayout({

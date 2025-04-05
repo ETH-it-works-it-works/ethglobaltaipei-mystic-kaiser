@@ -62,7 +62,6 @@ export const useThirdWeb = (): ThirdWebHook => {
     });
   }, [managerAddress, chain, client, matchManager]);
 
-
   const organiserContract = useMemo(() => {
     if (!client) return null;
     return getContract({
