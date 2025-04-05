@@ -46,9 +46,9 @@ export default function Dapp() {
       color: "bg-blue-700"
     },
     {
-      id: "quest",
-      title: "Quests",
-      subtitle: "DAILY MISSIONS",
+      id: "milestones",
+      title: "Milestones",
+      subtitle: "Earn more rewards",
       image: "/dapp/quest-bg.png",
       color: "bg-purple-700"
     }
@@ -137,6 +137,7 @@ export default function Dapp() {
             {activities.map(activity => (
               <div
                 key={activity.id}
+                onClick={() => router.push(`/dapp/${activity.id}`)}
                 className={`relative overflow-hidden rounded-xl ${activity.color} group cursor-pointer w-1/2 h-72`}
               >
                 <Image
