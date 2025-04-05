@@ -379,7 +379,7 @@ const useMultiBaasWithThirdweb = (): MultiBaasHook => {
             targetAddress.toLowerCase()
           );
         });
-        return matchedEvent || null; /
+        return matchedEvent || null;
       } catch (err) {
         console.error("Error getting organizer events:", err);
         return null;
