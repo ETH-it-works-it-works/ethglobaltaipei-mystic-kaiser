@@ -8,6 +8,7 @@ import {
   MethodCallResponse,
   TransactionToSignResponse,
   Event,
+  EventQueriesApi,
 } from "@curvegrid/multibaas-sdk";
 import { useMemo, useCallback } from "react";
 import { useActiveAccount } from "thirdweb/react";
@@ -55,6 +56,7 @@ interface MultiBaasHook {
   getAttackEvents: () => Promise<Array<Event> | null>;
   getBattleStartedEvents: () => Promise<Array<Event> | null>;
   getBattleEndedEvents: () => Promise<Array<Event> | null>;
+  executeArbitraryQuery: (query: any) => Promise<any>;
   getOrganiserEvent: (targetAddress: `0x${string}`) => Promise<Event | null>;
   getOrganisedEvents: (
     pageNum: number,
@@ -93,6 +95,10 @@ const useMultiBaasWithThirdweb = (): MultiBaasHook => {
   );
   const contractsApi = useMemo(() => new ContractsApi(mbConfig), [mbConfig]);
   const eventsApi = useMemo(() => new EventsApi(mbConfig), [mbConfig]);
+  const eventsQueryApi = useMemo(
+    () => new EventQueriesApi(mbConfig),
+    [mbConfig]
+  );
   const chainsApi = useMemo(() => new ChainsApi(mbConfig), [mbConfig]);
 
   // Get Chain Status
@@ -254,6 +260,19 @@ const useMultiBaasWithThirdweb = (): MultiBaasHook => {
       }
     }, [eventsApi, chain, matchAddressLabel, matchContractLabel]);
 
+  const executeArbitraryQuery = useCallback(
+    async (query: any) => {
+      try {
+        const response = await eventsQueryApi.executeArbitraryEventQuery(query);
+        return response.data.result;
+      } catch (err) {
+        console.error("Error executing arbitrary query:", err);
+        return null;
+      }
+    },
+    [eventsQueryApi]
+  );
+
   const getBattleStartedEvents =
     useCallback(async (): Promise<Array<Event> | null> => {
       try {
@@ -384,6 +403,7 @@ const useMultiBaasWithThirdweb = (): MultiBaasHook => {
     getAttackEvents,
     getBattleStartedEvents,
     getBattleEndedEvents,
+    executeArbitraryQuery,
     getOrganiserEvent,
     getOrganisedEvents,
   };

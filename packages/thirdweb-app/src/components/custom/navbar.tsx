@@ -17,6 +17,7 @@ import { Spinner } from "../Spinner";
 export default function Navbar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const { account, smartWallet, sessionKeyOptions } = useThirdWeb();
+  console.log(sessionKeyOptions);
   const getSigners = async () => {
     if (!smartWallet) return;
     const res = await getAllActiveSigners({
