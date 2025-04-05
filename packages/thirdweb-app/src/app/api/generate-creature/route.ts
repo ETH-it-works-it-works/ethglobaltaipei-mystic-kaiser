@@ -390,10 +390,6 @@ export async function POST(request: NextRequest) {
 
           const metadataResult = await metadataUploadResponse.json();
           const metadataCid = metadataResult.IpfsHash;
-          const createFile = await pinata.upload.file(metadataResult);
-          const newUrl = await pinata.gateways.convert(metadataCid);
-          console.log(`Create file ${createFile}`);
-          console.log("new url", newUrl);
 
           console.log(
             `Metadata uploaded successfully to IPFS with CID: ${metadataCid}`
