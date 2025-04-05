@@ -72,7 +72,6 @@ export default function Dapp() {
         setFetchingEvents(false);
       }
     };
-    
     fetchEvents();
   }, []);
 
@@ -150,9 +149,10 @@ export default function Dapp() {
           <Image
             src="/landing-page/white-title.svg"
             alt="Title"
+            onClick={() => router.push('/')}
             width={320}
             height={100}
-            className="object-cover w-full items-center"
+            className="object-cover w-full items-center cursor-pointer"
           />
 
           {/* Character Profile */}

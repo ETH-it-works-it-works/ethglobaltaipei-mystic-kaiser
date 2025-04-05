@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback, useMemo } from "react";
+import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import Link from "next/link";
 import { FaFistRaised } from "react-icons/fa";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -19,6 +19,7 @@ export default function BattleRoomPage({ params }: { params: PageParams }) {
   const { roomCode } = params;
   const router = useRouter();
   const searchParams = useSearchParams();
+  const battleStartedRef = useRef(false);
   const [supabase] = useState(() => createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
@@ -132,8 +133,56 @@ export default function BattleRoomPage({ params }: { params: PageParams }) {
           setGameState('ready');
           setIsCountdownActive(true);
           setCountdown(3);
-        }
 
+          if(currentUserAddress === roomData.player1_address && !battleStartedRef.current) {
+            // Set the ref to true to prevent duplicate calls
+            battleStartedRef.current = true;
+            console.log('Will call start-battle API once...');
+            setTimeout(async () => {
+              try {
+                console.log('Calling start-battle API...');
+                const response = await fetch("/api/start-battle", {
+                  method: "POST",
+                  headers: {
+                    'Content-Type': 'application/json',
+                  },
+                  body: JSON.stringify({
+                    address: roomData.player1_address,
+                    opponent: roomData.player2_address,
+                    player1MinDmg: roomData.player1_atk_min,
+                    player1MaxDmg: roomData.player1_atk_max,
+                    player2MinDmg: roomData.player2_atk_min,
+                    player2MaxDmg: roomData.player2_atk_max,
+                  }),
+                });
+                
+                const res = await response.json();
+                if (res.success) {
+                  console.log('Battle started successfully:', res);
+                  toast("Battle Started", {
+                    description: "Both players have joined. The battle is beginning!",
+                    action: {
+                      label: "Close",
+                      onClick: () => console.log("Closed"),
+                    },
+                  });
+                } else {
+                  console.error('Error starting battle:', res);
+                  toast("Error Starting Battle", {
+                    description: "There was an issue starting the battle. Gameplay will continue normally.",
+                    action: {
+                      label: "Close",
+                      onClick: () => console.log("Closed"),
+                    },
+                  });
+                }
+              } catch (error) {
+                console.error('Error calling start-battle API:', error);
+              }
+            }, 500); // small delay to ensure state is updated
+          }
+        }
+        
         // Set up subscription for all game updates
         const sub = BattleApiService.subscribeToBattle(roomCode, (payload) => {
           console.log('Update received:', payload);
@@ -163,59 +212,6 @@ export default function BattleRoomPage({ params }: { params: PageParams }) {
               
               return updatedRoom;
             });
-            
-            if (newRoom.status === 'ready' && newRoom.player2_address) {
-              console.log('Room is now full, starting countdown');
-              setGameState('ready');
-              setIsCountdownActive(true);
-              setCountdown(3);
-              
-              // Call the start-battle API when both players have joined
-              if (currentUserAddress === newRoom.player1_address) {
-                try {
-                  (async () => {
-                    console.log('Calling start-battle API...');
-                    const response = await fetch("/api/start-battle", {
-                      method: "POST",
-                      headers: {
-                        'Content-Type': 'application/json',
-                      },
-                      body: JSON.stringify({
-                        address: newRoom.player1_address,
-                        opponent: newRoom.player2_address,
-                        player1MinDmg: newRoom.player1_atk_min,
-                        player1MaxDmg: newRoom.player1_atk_max,
-                        player2MinDmg: newRoom.player2_atk_min,
-                        player2MaxDmg: newRoom.player2_atk_max,
-                      }),
-                    });
-                    
-                    const res = await response.json();
-                    if (res.success) {
-                      console.log('Battle started successfully:', res);
-                      toast("Battle Started", {
-                        description: "Both players have joined. The battle is beginning!",
-                        action: {
-                          label: "Close",
-                          onClick: () => console.log("Closed"),
-                        },
-                      });
-                    } else {
-                      console.error('Error starting battle:', res);
-                      toast("Error Starting Battle", {
-                        description: "There was an issue starting the battle. Gameplay will continue normally.",
-                        action: {
-                          label: "Close",
-                          onClick: () => console.log("Closed"),
-                        },
-                      });
-                    }
-                  })();
-                } catch (error) {
-                  console.error('Error calling start-battle API:', error);
-                }
-              }
-            }
 
             if (newRoom.status === 'completed') {
               setGameState('finished');
@@ -260,7 +256,7 @@ export default function BattleRoomPage({ params }: { params: PageParams }) {
     try {
       // Call the attack API
       const result = await BattleApiService.performAttack(roomCode, currentUserAddress, damage);
-      
+
       console.log('Attack result:', result);
       
       // Toast notification for successful attack

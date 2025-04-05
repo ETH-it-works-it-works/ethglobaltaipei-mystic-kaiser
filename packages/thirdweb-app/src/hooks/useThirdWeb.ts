@@ -41,6 +41,7 @@ interface ThirdWebHook {
   accountAbstraction: SmartWalletOptions;
   appMetadata: AppMetadata;
   sessionKeyOptions: BaseTransactionOptions<AddSessionKeyOptions> | null;
+  nftContract: Readonly<ContractOptions<any, `0x${string}`>> | null;
 }
 
 export const useThirdWeb = (): ThirdWebHook => {
@@ -123,6 +124,15 @@ export const useThirdWeb = (): ThirdWebHook => {
       };
     }, [smartWallet, account, engineWallet]);
 
+  const nftContract = useMemo(() => {
+    if (!client) return null;
+    return getContract({
+      address: "0x360E849E2b04C558067bC17Cc24bC575076eAE9F", // NFT contract address
+      chain,
+      client,
+    });
+  }, [chain, client]);
+
   return {
     client,
     chain,
@@ -134,5 +144,6 @@ export const useThirdWeb = (): ThirdWebHook => {
     accountAbstraction,
     appMetadata,
     sessionKeyOptions,
+    nftContract,
   };
 };

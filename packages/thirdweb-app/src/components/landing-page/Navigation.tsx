@@ -5,6 +5,11 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import ThirdWebConnectButton from "../ThirdWebConnectButton";
 import LaunchButton from "../LaunchButton";
+import { useThirdWeb } from "@/hooks/useThirdWeb";
+import { TransactionButton } from "thirdweb/react";
+import { addSessionKey } from "thirdweb/extensions/erc4337";
+import { toast } from "sonner";
+import { Spinner } from "../Spinner";
 // import { useConnect, useDisconnect, useAddress } from "@thirdweb-dev/react";
 
 export default function Navigation() {
@@ -12,6 +17,8 @@ export default function Navigation() {
 //   const disconnect = useDisconnect();
 //   const address = useAddress();
   const router = useRouter();
+  const { account, smartWallet, sessionKeyOptions } = useThirdWeb();
+  console.log(sessionKeyOptions);
 
 //   const handleConnect = async () => {
 //     try {
@@ -48,6 +55,38 @@ export default function Navigation() {
         {/* Desktop Navigation */}
         <div className="hidden md:flex items-center text-2xl text-white font-inter">
              <ThirdWebConnectButton />
+             {sessionKeyOptions ? (
+            <TransactionButton
+              transaction={() => addSessionKey(sessionKeyOptions)}
+              onTransactionConfirmed={(tx) => {
+                toast("Session Key Added", {
+                  description: JSON.stringify(tx, (key, value) =>
+                    typeof value === "bigint" ? value.toString() : value
+                  ),
+                  action: {
+                    label: "Close",
+                    onClick: () => console.log("Closed"),
+                  },
+                });
+              }}
+              onError={(err) => {
+                toast("Error adding session key", {
+                  description: err.message,
+                  action: {
+                    label: "Close",
+                    onClick: () => console.log("Closed"),
+                  },
+                });
+              }}
+            >
+              Add Session Key
+            </TransactionButton>
+          ) : (
+            <p className="text-gray-500">
+              <Spinner />
+              Waiting for session key configuration...
+            </p>
+          )}
         </div>
       </div>
     </nav>
