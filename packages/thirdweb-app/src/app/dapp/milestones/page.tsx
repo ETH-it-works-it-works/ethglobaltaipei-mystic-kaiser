@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import Image from "next/image";
 import { useThirdWeb } from "@/hooks/useThirdWeb";
 import { motion } from "framer-motion";
-
+import Navigation from "@/components/landing-page/Navigation";
 // Mock data for friend connections
 const friendData = [
   {
@@ -85,6 +85,9 @@ export default function MilestonesPage() {
   return (
     <div className="min-h-screen w-full bg-[url('/dapp/dapp-bg.png')] bg-cover bg-center text-white">
       {/* Main Content Area */}
+      <div className="hidden">
+            <Navigation />
+        </div>
       <div className="container mx-auto pt-28 px-4">
         <div className="flex flex-col md:flex-row gap-8">
           {/* Left column - Stats & Latest Friends */}

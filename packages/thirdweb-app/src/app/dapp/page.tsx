@@ -32,8 +32,8 @@ export default function Dapp() {
     }
   ] : [
     {
-      id: "event",
-      title: "Event",
+      id: "events",
+      title: "Events",
       subtitle: "Find Events",
       image: "/dapp/event-bg.png",
       color: "bg-amber-700"
