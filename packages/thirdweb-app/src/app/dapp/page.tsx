@@ -5,12 +5,14 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { AiOutlineSwap } from "react-icons/ai";
-
+import { useThirdWeb } from "@/hooks/useThirdWeb";
+import Navigation from "@/components/landing-page/Navigation";
 export default function Dapp() {
   const [selectedTab, setSelectedTab] = useState("home");
   const [isEventCreator, setIsEventCreator] = useState(false);
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
+  const { account } = useThirdWeb();
 
   // Mock data for activities
   const activities = isEventCreator ? [
@@ -55,10 +57,15 @@ export default function Dapp() {
   // Main dapp content
   return (
     <div className="min-h-screen w-full bg-[url('/dapp/dapp-bg.png')] bg-cover bg-right text-white">
+        <div className="hidden">
+            <Navigation />
+        </div>
       {/* Main Content Area */}
       <div className="flex justify-between h-[calc(100vh-5rem)] p-6">
         {/* Left Sidebar - Character Info */}
         <div className="w-1/4 bg-black/40 backdrop-blur-sm rounded-xl p-4 flex flex-col">
+        <Image src="/landing-page/white-title.svg" alt="Title" width={320} height={100} className="object-cover w-full items-center" />
+
           {/* Character Profile */}
           <div className="flex items-center gap-4 border-b border-gray-600 pb-4 px-5">
             <div className="relative">
@@ -73,9 +80,9 @@ export default function Dapp() {
             
             <div className="flex flex-col w-full">
               <h2 className="text-2xl font-bold font-dark-mystic">
-                0x1234...5678
+                {account?.address?.slice(0, 6)}...{account?.address?.slice(-4)}
               </h2>
-              <p className="text-gray-300 text-sm">ID: 0x12345678</p>
+              <p className="text-gray-300 text-sm">ID: {account?.address?.slice(0, 6)}...{account?.address?.slice(-4)}</p>
             </div>
 
             <div className="flex flex-col items-center">
