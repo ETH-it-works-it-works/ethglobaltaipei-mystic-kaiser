@@ -78,7 +78,10 @@ export default function Marketplace() {
   };
   const web3 = new Web3("https://alfajores-forno.celo-testnet.org");
 
-  const fetchNFTMetadata = async (nftAddress: string, tokenId: number): Promise<NFTMetadata> => {
+  const fetchNFTMetadata = async (
+    nftAddress: string,
+    tokenId: number
+  ): Promise<NFTMetadata> => {
     try {
       const contract = new web3.eth.Contract([
         {
@@ -102,7 +105,9 @@ export default function Marketplace() {
         }
       ], nftAddress);
 
-      const tokenURI = await contract.methods.tokenURI(tokenId).call() as string;
+      const tokenURI = (await contract.methods
+        .tokenURI(tokenId)
+        .call()) as string;
       const ipfsUrl = tokenURI.replace("ipfs://", "https://ipfs.io/ipfs/");
       const response = await fetch(ipfsUrl);
       return await response.json();
@@ -111,7 +116,7 @@ export default function Marketplace() {
       return {
         name: "Unknown NFT",
         description: "Metadata not available",
-        image: "https://via.placeholder.com/400"
+        image: "https://via.placeholder.com/400",
       };
     }
   };
@@ -136,19 +141,25 @@ export default function Marketplace() {
         console.log("Event query result:\n", activeListing.rows);
 
         const activeIds = activeListingId.output;
-        const matchedListings = activeListing.rows.filter(
-          (item: any) => activeIds.includes(item.listingid)
+        const matchedListings = activeListing.rows.filter((item: any) =>
+          activeIds.includes(item.listingid)
         );
 
         // Fetch metadata for each listing
         const listingsWithMetadata = await Promise.all(
           matchedListings.map(async (item: any) => {
-            const metadata = await fetchNFTMetadata(item.nftaddress, item.tokenid);
+            const metadata = await fetchNFTMetadata(
+              item.nftaddress,
+              item.tokenid
+            );
             return { ...item, metadata };
           })
         );
 
-        console.log("Filtered active listings with metadata:\n", listingsWithMetadata);
+        console.log(
+          "Filtered active listings with metadata:\n",
+          listingsWithMetadata
+        );
         setItems(listingsWithMetadata);
       } catch (e) {
         if (e) {
@@ -168,6 +179,7 @@ export default function Marketplace() {
 
   return (
     <main className="p-6 pb-10 min-h-[100vh] flex items-center justify-center container max-w-screen-lg mx-auto">
+      <Navbar />
       <div className="py-10">
         <h1 className="text-4xl font-extrabold mb-12 text-center text-gray-800">
           Marketplace

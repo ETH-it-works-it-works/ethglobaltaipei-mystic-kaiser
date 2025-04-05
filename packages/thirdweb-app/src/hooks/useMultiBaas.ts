@@ -8,7 +8,6 @@ import {
   MethodCallResponse,
   TransactionToSignResponse,
   Event,
-  EventQueriesApi,
 } from "@curvegrid/multibaas-sdk";
 import { useMemo, useCallback } from "react";
 import { useActiveAccount } from "thirdweb/react";
@@ -53,10 +52,14 @@ interface MultiBaasHook {
   getHp: (battleId: number) => Promise<PlayerStatus | null>;
   getOrganiserMetadata: (tokenId: number) => Promise<NFTMetadata | null>;
   getBattle: (battleId: number) => Promise<Battle | null>;
+  getScanCount: (
+    contractAddress: string,
+    participantAddress: string
+  ) => Promise<number | null>;
+  getMilestoneData: (contractaddress: string) => Promise<string[] | null>;
   getAttackEvents: () => Promise<Array<Event> | null>;
   getBattleStartedEvents: () => Promise<Array<Event> | null>;
   getBattleEndedEvents: () => Promise<Array<Event> | null>;
-  executeArbitraryQuery: (query: any) => Promise<any>;
   getOrganiserEvent: (targetAddress: `0x${string}`) => Promise<Event | null>;
   getOrganisedEvents: (
     pageNum: number,
@@ -79,6 +82,8 @@ const useMultiBaasWithThirdweb = (): MultiBaasHook => {
     process.env.NEXT_PUBLIC_MULTIBAAS_EVENT_FACTORY_CONTRACT_LABEL || "";
   const eventFactoryAddressLabel =
     process.env.NEXT_PUBLIC_MULTIBAAS_EVENT_FACTORY_ADDRESS_LABEL || "";
+  const eventImplementationContractLabel =
+    process.env.NEXT_PUBLIC_MULTIBAAS_EVENT_IMPLEMENTATION_CONTRACT_LABEL || "";
 
   const chain = "ethereum";
 
@@ -95,10 +100,6 @@ const useMultiBaasWithThirdweb = (): MultiBaasHook => {
   );
   const contractsApi = useMemo(() => new ContractsApi(mbConfig), [mbConfig]);
   const eventsApi = useMemo(() => new EventsApi(mbConfig), [mbConfig]);
-  const eventsQueryApi = useMemo(
-    () => new EventQueriesApi(mbConfig),
-    [mbConfig]
-  );
   const chainsApi = useMemo(() => new ChainsApi(mbConfig), [mbConfig]);
 
   // Get Chain Status
@@ -234,6 +235,44 @@ const useMultiBaasWithThirdweb = (): MultiBaasHook => {
     [callContractFunction, organiserAddressLabel, organiserContractLabel]
   );
 
+  const getMilestoneData = useCallback(
+    async (contractAddress: string): Promise<string[] | null> => {
+      try {
+        const result = await callContractFunction(
+          "getMilestones",
+          contractAddress,
+          eventImplementationContractLabel
+        );
+        return result as string[];
+      } catch (err) {
+        console.error("Error getting player hp:", err);
+        return null;
+      }
+    },
+    [callContractFunction, eventImplementationContractLabel]
+  );
+
+  const getScanCount = useCallback(
+    async (
+      contractAddress: string,
+      participantAddress: string
+    ): Promise<number | null> => {
+      try {
+        const result = await callContractFunction(
+          "scanCount",
+          contractAddress,
+          eventImplementationContractLabel,
+          [participantAddress]
+        );
+        return result as number;
+      } catch (err) {
+        console.error("Error getting player hp:", err);
+        return null;
+      }
+    },
+    [callContractFunction, eventImplementationContractLabel]
+  );
+
   const getAttackEvents =
     useCallback(async (): Promise<Array<Event> | null> => {
       try {
@@ -259,19 +298,6 @@ const useMultiBaasWithThirdweb = (): MultiBaasHook => {
         return null;
       }
     }, [eventsApi, chain, matchAddressLabel, matchContractLabel]);
-
-  const executeArbitraryQuery = useCallback(
-    async (query: any) => {
-      try {
-        const response = await eventsQueryApi.executeArbitraryEventQuery(query);
-        return response.data.result;
-      } catch (err) {
-        console.error("Error executing arbitrary query:", err);
-        return null;
-      }
-    },
-    [eventsQueryApi]
-  );
 
   const getBattleStartedEvents =
     useCallback(async (): Promise<Array<Event> | null> => {
@@ -353,7 +379,7 @@ const useMultiBaasWithThirdweb = (): MultiBaasHook => {
             targetAddress.toLowerCase()
           );
         });
-        return matchedEvent || null; // Return event or null if not found
+        return matchedEvent || null; /
       } catch (err) {
         console.error("Error getting organizer events:", err);
         return null;
@@ -400,10 +426,11 @@ const useMultiBaasWithThirdweb = (): MultiBaasHook => {
     getHp,
     getOrganiserMetadata,
     getBattle,
+    getScanCount,
+    getMilestoneData,
     getAttackEvents,
     getBattleStartedEvents,
     getBattleEndedEvents,
-    executeArbitraryQuery,
     getOrganiserEvent,
     getOrganisedEvents,
   };

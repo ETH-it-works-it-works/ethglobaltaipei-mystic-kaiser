@@ -56,7 +56,6 @@ export default function EventListingsPage() {
     const fetchEvents = async () => {
       setLoading(true);
       const fetchedEvents = await getOrganisedEvents(page, eventsPerPage);
-      console.log(fetchedEvents);
       if (fetchedEvents) {
         setEvents(extractEvents(fetchedEvents));
       }
@@ -83,7 +82,7 @@ export default function EventListingsPage() {
             <TableHeader>
               <TableRow>
                 <TableHead>ID</TableHead>
-                <TableHead>Event Name</TableHead>
+                <TableHead>Name</TableHead>
                 <TableHead>Description</TableHead>
                 <TableHead>Start Date</TableHead>
                 <TableHead>Organizer</TableHead>

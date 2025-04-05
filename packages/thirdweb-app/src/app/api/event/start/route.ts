@@ -1,6 +1,5 @@
-import { chain, managerAddress } from "@/common/constants";
+import { chain } from "@/common/constants";
 import { NextResponse } from "next/server";
-import useMultiBaasWithThirdweb from "@/hooks/useMultiBaas";
 
 const {
   ENGINE_URL,
@@ -9,7 +8,7 @@ const {
 } = process.env;
 
 export const POST = async (request: Request) => {
-  const { _battleId, attacker_damage } = await request.json();
+  const { eventAddress, address } = await request.json();
 
   if (
     !ENGINE_URL ||
@@ -21,8 +20,8 @@ export const POST = async (request: Request) => {
       { status: 500 }
     );
   const body = JSON.stringify({
-    functionName: "function attack(uint256 _battleId, uint256 attacker_damage)",
-    args: [_battleId, attacker_damage],
+    functionName: "function startEvent()",
+    args: [],
     txOverrides: {
       gas: "530000",
       gasPrice: "50000000000",
@@ -32,14 +31,8 @@ export const POST = async (request: Request) => {
     },
     abi: [
       {
-        inputs: [
-          {
-            internalType: "uint256",
-            name: "_battleId",
-            type: "uint256",
-          },
-        ],
-        name: "attack",
+        inputs: [],
+        name: "startEvent",
         outputs: [],
         stateMutability: "nonpayable",
         type: "function",
@@ -47,14 +40,15 @@ export const POST = async (request: Request) => {
     ],
   });
   const response = await fetch(
-    `${ENGINE_URL}/contract/${chain.id}/${managerAddress}/write`,
+    `${ENGINE_URL}/contract/${chain.id}/${eventAddress}/write`,
     {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${THIRDWEB_SECRET_KEY}`,
         chain: chain.id.toString(),
-        contractAddress: managerAddress,
+        contractAddress: eventAddress,
+        "x-account-address": address,
         "x-backend-wallet-address": NEXT_PUBLIC_THIRDWEB_ENGINE_WALLET_ADDRESS,
       },
       body,
@@ -62,7 +56,6 @@ export const POST = async (request: Request) => {
   );
   if (response.ok) {
     const data = await response.json();
-    console.log(data);
     return NextResponse.json({
       success: true,
       data: JSON.stringify(data, (_, value) =>
