@@ -17,6 +17,8 @@
     "@radix-ui/react-form": "^0.1.2",
     "@radix-ui/react-label": "^2.1.2",
     "@radix-ui/react-slot": "^1.1.2",
+    "@selfxyz/core": "^0.0.24",
+    "@selfxyz/qrcode": "^0.0.19",
     "@supabase/supabase-js": "^2.49.4",
     "@thirdweb-dev/react": "^4.9.4",
     "@yudiel/react-qr-scanner": "^2.2.1",
@@ -38,6 +40,7 @@
     "tailwind-merge": "^3.0.2",
     "tailwindcss-animate": "^1.0.7",
     "thirdweb": "^5",
+    "web3": "^4.16.0",
     "zod": "^3.24.2"
   },
   "devDependencies": {
