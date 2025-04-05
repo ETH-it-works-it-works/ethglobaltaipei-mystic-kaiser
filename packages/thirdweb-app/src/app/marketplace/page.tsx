@@ -3,10 +3,7 @@
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import Web3 from "web3";
-import useMultiBaasWithThirdweb from "@/hooks/useMultiBaas";
 import * as MultiBaas from "@curvegrid/multibaas-sdk";
-import { isAxiosError } from "axios";
-import { ethers } from "ethers";
 
 interface NFTMetadata {
   name: string;
@@ -85,12 +82,23 @@ export default function Marketplace() {
     try {
       const contract = new web3.eth.Contract([
         {
-          "constant": true,
-          "inputs": [{ "name": "_tokenId", "type": "uint256" }],
+          "inputs": [
+            {
+              "internalType": "uint256",
+              "name": "tokenId",
+              "type": "uint256"
+            }
+          ],
           "name": "tokenURI",
-          "outputs": [{ "name": "", "type": "string" }],
-          "type": "function",
-          "stateMutability": "view"
+          "outputs": [
+            {
+              "internalType": "string",
+              "name": "",
+              "type": "string"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
         }
       ], nftAddress);
 
