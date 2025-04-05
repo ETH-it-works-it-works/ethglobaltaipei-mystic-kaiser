@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import Web3 from "web3";
+import Navbar from "@/components/custom/navbar";
 import * as MultiBaas from "@curvegrid/multibaas-sdk";
 
 interface NFTMetadata {
@@ -83,27 +84,30 @@ export default function Marketplace() {
     tokenId: number
   ): Promise<NFTMetadata> => {
     try {
-      const contract = new web3.eth.Contract([
-        {
-          "inputs": [
-            {
-              "internalType": "uint256",
-              "name": "tokenId",
-              "type": "uint256"
-            }
-          ],
-          "name": "tokenURI",
-          "outputs": [
-            {
-              "internalType": "string",
-              "name": "",
-              "type": "string"
-            }
-          ],
-          "stateMutability": "view",
-          "type": "function"
-        }
-      ], nftAddress);
+      const contract = new web3.eth.Contract(
+        [
+          {
+            inputs: [
+              {
+                internalType: "uint256",
+                name: "tokenId",
+                type: "uint256",
+              },
+            ],
+            name: "tokenURI",
+            outputs: [
+              {
+                internalType: "string",
+                name: "",
+                type: "string",
+              },
+            ],
+            stateMutability: "view",
+            type: "function",
+          },
+        ],
+        nftAddress
+      );
 
       const tokenURI = (await contract.methods
         .tokenURI(tokenId)
