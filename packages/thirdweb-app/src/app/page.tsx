@@ -19,19 +19,21 @@ interface IpfsData {
   metadataUrl: string;
 }
 
+interface Creature {
+  imagePath: string;
+  metadata: CreatureMetadata;
+  ipfs: IpfsData | null;
+}
+
 export default function Home() {
   const [isLoading, setIsLoading] = useState(false);
-  const [result, setResult] = useState<string | null>(null);
-  const [metadata, setMetadata] = useState<CreatureMetadata | null>(null);
-  const [ipfsData, setIpfsData] = useState<IpfsData | null>(null);
+  const [creatures, setCreatures] = useState<Creature[]>([]);
   const [error, setError] = useState<string | null>(null);
 
   const runFluxAI = async () => {
     try {
       setIsLoading(true);
-      setResult(null);
-      setMetadata(null);
-      setIpfsData(null);
+      setCreatures([]);
       setError(null);
       
       console.log("Making API request...");
@@ -42,24 +44,19 @@ export default function Home() {
       console.log("API response status:", response.status);
       
       if (!response.ok) {
-        throw new Error(`Failed to generate creature: ${response.status} ${response.statusText}`);
+        throw new Error(`Failed to generate creatures: ${response.status} ${response.statusText}`);
       }
       
       const data = await response.json();
       console.log("API response data:", data);
       
-      if (data.success) {
-        setResult(data.imagePath);
-        setMetadata(data.metadata);
-        
-        if (data.ipfs) {
-          setIpfsData(data.ipfs);
-        }
+      if (data.success && data.creatures) {
+        setCreatures(data.creatures);
       } else if (data.error) {
         setError(data.error);
       }
     } catch (error) {
-      console.error('Error generating creature:', error);
+      console.error('Error generating creatures:', error);
       setError(error instanceof Error ? error.message : String(error));
     } finally {
       setIsLoading(false);
@@ -68,8 +65,8 @@ export default function Home() {
 
   // Log state changes for debugging
   useEffect(() => {
-    console.log("Current state:", { result, metadata, ipfsData, error });
-  }, [result, metadata, ipfsData, error]);
+    console.log("Current state:", { creatures, error });
+  }, [creatures, error]);
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen p-4">
@@ -80,12 +77,12 @@ export default function Home() {
         disabled={isLoading}
         className="px-6 py-3 bg-blue-600 text-white font-semibold rounded-lg shadow-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 disabled:opacity-50 disabled:cursor-not-allowed"
       >
-        {isLoading ? 'Generating...' : 'Generate Fantasy Creature'}
+        {isLoading ? 'Generating...' : 'Generate Fantasy Creatures'}
       </button>
       
       {isLoading && (
         <div className="mt-6 text-gray-700">
-          Generating your creature... This may take a minute.
+          Generating your creatures... This may take a minute.
         </div>
       )}
       
@@ -96,77 +93,74 @@ export default function Home() {
         </div>
       )}
       
-      {result && metadata && (
-        <div className="mt-8 flex flex-col md:flex-row gap-8 items-start">
-          <div className="flex flex-col items-center">
-            <div className="relative w-full max-w-md h-[400px] border border-gray-200 rounded-lg">
-              <img 
-                src={result}
-                alt={`${metadata.rarity} ${metadata.species}`}
-                className="rounded-lg shadow-lg object-contain w-full h-full"
-                onError={(e) => {
-                  console.error("Image failed to load:", result);
-                  e.currentTarget.src = "/sample_dragon.svg";
-                }}
-              />
-            </div>
-            
-            {/* Display image path for debugging */}
-            <div className="mt-2 text-sm text-gray-500">
-              Image path: {result}
-            </div>
-            
-            {ipfsData && (
-              <div className="mt-4 w-full">
-                <h3 className="text-lg font-semibold mb-2">IPFS Links:</h3>
-                <div className="bg-gray-50 p-3 rounded-md text-sm">
-                  <div className="mb-2">
-                    <span className="font-medium">Image: </span>
-                    <a 
-                      href={ipfsData.imageUrl} 
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      className="text-blue-600 hover:underline break-all"
-                    >
-                      {ipfsData.image}
-                    </a>
-                  </div>
-                  <div>
-                    <span className="font-medium">Metadata: </span>
-                    <a 
-                      href={ipfsData.metadataUrl} 
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      className="text-blue-600 hover:underline break-all"
-                    >
-                      {ipfsData.metadata}
-                    </a>
-                  </div>
+      {creatures.length > 0 && (
+        <div className="mt-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          {creatures.map((creature, index) => (
+            <div key={index} className="flex flex-col items-center">
+              <div className="bg-gray-100 p-6 rounded-lg shadow-md w-full">
+                <h2 className="text-2xl font-bold mb-4 text-center">
+                  {creature.metadata.rarity} {creature.metadata.species}
+                </h2>
+                
+                <div className="relative w-full h-[300px] border border-gray-200 rounded-lg mb-4">
+                  <img 
+                    src={creature.imagePath}
+                    alt={`${creature.metadata.rarity} ${creature.metadata.species}`}
+                    className="rounded-lg shadow-lg object-contain w-full h-full"
+                    onError={(e) => {
+                      console.error("Image failed to load:", creature.imagePath);
+                      e.currentTarget.src = "/sample_dragon.svg";
+                    }}
+                  />
                 </div>
+                
+                <div className="space-y-2 text-gray-700">
+                  {creature.metadata.element && (
+                    <p><span className="font-semibold">Element:</span> {creature.metadata.element}</p>
+                  )}
+                  {creature.metadata.form && (
+                    <p><span className="font-semibold">Form:</span> {creature.metadata.form}</p>
+                  )}
+                  {creature.metadata.anomalies && creature.metadata.anomalies.length > 0 && (
+                    <p><span className="font-semibold">Anomalies:</span> {creature.metadata.anomalies.join(', ')}</p>
+                  )}
+                  <p className="mt-4 pt-4 border-t border-gray-300 text-sm">
+                    <span className="font-semibold">Prompt:</span> <span className="italic">{creature.metadata.prompt}</span>
+                  </p>
+                </div>
+                
+                {creature.ipfs && (
+                  <div className="mt-4 w-full">
+                    <h3 className="text-lg font-semibold mb-2">IPFS Links:</h3>
+                    <div className="bg-gray-50 p-3 rounded-md text-sm">
+                      <div className="mb-2">
+                        <span className="font-semibold">Image: </span>
+                        <a 
+                          href={creature.ipfs.imageUrl} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="text-blue-600 hover:underline break-all"
+                        >
+                          {creature.ipfs.image}
+                        </a>
+                      </div>
+                      <div>
+                        <span className="font-semibold">Metadata: </span>
+                        <a 
+                          href={creature.ipfs.metadataUrl} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="text-blue-600 hover:underline break-all"
+                        >
+                          {creature.ipfs.metadata}
+                        </a>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
-            )}
-          </div>
-          
-          <div className="bg-gray-100 p-6 rounded-lg shadow-md">
-            <h2 className="text-2xl font-bold mb-4 text-center">
-              {metadata.rarity} {metadata.species}
-            </h2>
-            
-            <div className="space-y-2 text-gray-700">
-              {metadata.element && (
-                <p><span className="font-semibold">Element:</span> {metadata.element}</p>
-              )}
-              {metadata.form && (
-                <p><span className="font-semibold">Form:</span> {metadata.form}</p>
-              )}
-              {metadata.anomalies && metadata.anomalies.length > 0 && (
-                <p><span className="font-semibold">Anomalies:</span> {metadata.anomalies.join(', ')}</p>
-              )}
-              <p className="mt-4 pt-4 border-t border-gray-300">
-                <span className="font-semibold">Prompt:</span> <span className="text-sm italic">{metadata.prompt}</span>
-              </p>
             </div>
-          </div>
+          ))}
         </div>
       )}
     </div>
