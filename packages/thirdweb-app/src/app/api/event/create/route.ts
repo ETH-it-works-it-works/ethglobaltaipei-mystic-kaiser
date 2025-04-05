@@ -30,7 +30,7 @@ export const POST = async (request: Request) => {
   )
     return NextResponse.json(
       { message: "Missing Environment variables" },
-      { status: 500 }
+      { status: 500 },
     );
   const body = JSON.stringify({
     functionName:
@@ -116,14 +116,14 @@ export const POST = async (request: Request) => {
         "x-backend-wallet-address": NEXT_PUBLIC_THIRDWEB_ENGINE_WALLET_ADDRESS,
       },
       body,
-    }
+    },
   );
   if (response.ok) {
     const data = await response.json();
     return NextResponse.json({
       success: true,
       data: JSON.stringify(data, (_, value) =>
-        typeof value === "bigint" ? value.toString() : value
+        typeof value === "bigint" ? value.toString() : value,
       ),
     });
   } else {

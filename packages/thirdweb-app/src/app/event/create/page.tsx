@@ -51,20 +51,12 @@ export default function EventCreationPage() {
           message: "Start date must be in the future",
         }
       ),
-    baseUri: z.string(),
     prompt: z.string().nonempty("Prompt cannot be empty"),
-    images: z
-      .array(
-        z.object({
-          file: z.instanceof(File),
-        })
-      )
-      .nonempty("At least one image is required"),
   });
 
   const [metadataCid, setMetadataCid] = useState<string>("");
   const [imageCidList, setImageCidList] = useState<string[]>([]);
-
+  console.log("imageCidList", imageCidList);
   const { account } = useThirdWeb();
   const [imagesPreview, setImagesPreview] = useState<string[]>([]); // Preview array
 
@@ -77,7 +69,6 @@ export default function EventCreationPage() {
       participantLimit: 0,
       startDate: new Date().toISOString().split("T")[0], // Format to "YYYY-MM-DD"
       prompt: "",
-      baseUri: "",
     },
   });
 
@@ -102,8 +93,8 @@ export default function EventCreationPage() {
         );
       }
 
-      setMetadataCid(generateImageJson.metadataCid);
-      setImageCidList(generateImageJson.imageCidList);
+      setMetadataCid(generateImageJson.data.metadataCid);
+      setImageCidList(generateImageJson.data.imageCidList);
     } catch (error) {
       toast.error("Failed to generate image");
     } finally {
@@ -111,21 +102,18 @@ export default function EventCreationPage() {
     }
   };
 
-  // Update the button in the form
-  <Button
-    type="button"
-    onClick={() => promptImage(form.getValues("prompt"))}
-    disabled={isGenerating}
-  >
-    {isGenerating ? "Generating..." : "Prompt Your Image"}
-  </Button>;
   const onSubmit = async (data: z.infer<typeof FormSchema>) => {
+    console.log("Form data:", data);
     try {
-      toast("Uploading images to IPFS...");
+      if (!metadataCid || imageCidList.length === 0) {
+        toast.error("Please generate images first");
+        return;
+      }
 
-      const baseUri = `ipfs://${metadataCid}`;
-
-      form.setValue("baseUri", baseUri);
+      toast("Creating event...");
+      console.log("Metadata CID:", metadataCid);
+      console.log("Image CID List:", imageCidList);
+      const baseUri = `ipfs://${metadataCid}/`;
 
       // Prepare parameters for event creation through contract
       const startDateTimestamp = Math.floor(
@@ -136,7 +124,7 @@ export default function EventCreationPage() {
         body: JSON.stringify({
           address: account?.address as string,
           name: data.name,
-          description: data.name,
+          description: data.description,
           location: data.location,
           participantLimit: data.participantLimit,
           startDate: startDateTimestamp,
@@ -286,17 +274,23 @@ export default function EventCreationPage() {
                 </Button>
               </div>
               {imageCidList && imageCidList.length > 0 && (
-                <div>
-                  <p>Image CIDs:</p>
-                  {imageCidList.map((imagecid) => (
-                    <Image
-                      key={imagecid}
-                      src={`https://ipfs.io/ipfs/${imagecid}`}
-                      width={100}
-                      height={50}
-                      alt={imagecid}
-                    />
-                  ))}
+                <div className="mt-6">
+                  <h3 className="text-lg font-semibold mb-4">
+                    Generated Images:
+                  </h3>
+                  <div className="grid grid-cols-2 gap-4">
+                    {imageCidList.map((imagecid) => (
+                      <div key={imagecid} className="relative aspect-square">
+                        <Image
+                          src={`https://ipfs.io/ipfs/${imagecid}`}
+                          alt={`Generated image ${imagecid}`}
+                          fill
+                          className="object-cover rounded-lg"
+                          sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                        />
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
               <Button type="submit">Submit</Button>

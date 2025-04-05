@@ -181,7 +181,7 @@ export default function ContractAddressPage() {
   return (
     <div className="min-h-screen flex items-center flex-col justify-center p-6">
       <Navbar />
-      {!loading && eventData && !eventData.isStarted && !isOrganiser ? (
+      {eventData && !eventData.isStarted && (
         <div className="w-full max-w-2xl bg-white rounded-lg shadow-md p-6">
           <div className="flex justify-between items-center">
             <h1 className="text-2xl font-bold mb-4">{eventData?.name}</h1>
@@ -220,10 +220,8 @@ export default function ContractAddressPage() {
             </div>
           </div>
         </div>
-      ) : (
-        <p className="text-white text-center">No event data found.</p>
       )}
-      {!loading && eventData && eventData.isStarted && isOrganiser && (
+      {eventData && !eventData.isStarted && isOrganiser && (
         <div className="mt-6">
           <Button
             onClick={onStartEvent}
