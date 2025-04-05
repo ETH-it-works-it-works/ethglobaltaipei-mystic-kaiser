@@ -99,13 +99,10 @@ async function generatePrompt(): Promise<[string, string, PromptComponents]> {
 
 export async function POST(request: NextRequest) {
   try {
-    // Use the Hugging Face Inference API
-    const apiKey = process.env.NEXT_PUBLIC_FLUX_AI;
-    if (!apiKey) {
-      throw new Error("API key not configured");
-    }
-    
-    const client = new InferenceClient(apiKey);
+    // Check if we should use sample images - should be false in production
+    const useSampleImages = process.env.USE_SAMPLE_IMAGES === 'true';
+
+    // Generate metadata and prompt regardless
     const [fullPrompt, rarity, components] = await generatePrompt();
     
     console.log("\n🌟 Generating New Creature 🌟");
@@ -118,6 +115,21 @@ export async function POST(request: NextRequest) {
     console.log("-".repeat(40));
     console.log(`Final Prompt: "${fullPrompt}"`);
     
+    // Generate image using AI model
+    let imageBuffer: Buffer;
+    let imagePath: string;
+    let timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+    let filename = `${rarity}_${timestamp}.jpg`;
+    
+    // Use the Hugging Face Inference API
+    const apiKey = process.env.NEXT_PUBLIC_FLUX_AI;
+    if (!apiKey) {
+      throw new Error("API key not configured");
+    }
+    
+    console.log("Generating image with Hugging Face API...");
+    const client = new InferenceClient(apiKey);
+    
     const response = await client.textToImage({
       inputs: fullPrompt,
       model: "black-forest-labs/FLUX.1-dev",
@@ -128,72 +140,113 @@ export async function POST(request: NextRequest) {
     });
 
     const arrayBuffer = await response.arrayBuffer();
-    const buffer = Buffer.from(arrayBuffer);
+    imageBuffer = Buffer.from(arrayBuffer);
 
     // Create directory for saving images
     const outputDir = path.join(process.cwd(), "public", "generated_images");
     await fs.mkdir(outputDir, { recursive: true });
     
     // Save the image
-    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-    const filename = `${rarity}_${timestamp}.jpg`;
     const outputPath = path.join(outputDir, filename);
+    await fs.writeFile(outputPath, imageBuffer);
     
-    await fs.writeFile(outputPath, buffer);
-    
-    // Check if USE_SAMPLE_IMAGES is set to true
-    const useSampleImages = process.env.USE_SAMPLE_IMAGES === 'true';
+    imagePath = `/generated_images/${filename}`;
+    console.log(`Image saved to ${imagePath}`);
     
     // IPFS upload data
     let ipfsData = null;
     
-    // Only upload to IPFS if we're not using sample images
-    if (!useSampleImages) {
-      try {
-        console.log("Uploading image to IPFS...");
-        
-        // Upload file to IPFS from saved path
-        const url = `file://${outputPath}`;
-        const imageResult = await pinata.upload.public.url(url);
-        
-        // Create metadata
-        const metadataContent = {
-          name: `${rarity} ${components.species}`,
-          description: `A ${rarity.toLowerCase()} ${components.species.toLowerCase()} fantasy creature`,
-          image: `ipfs://${imageResult.cid}`,
-          attributes: [
-            { trait_type: "Rarity", value: rarity },
-            { trait_type: "Species", value: components.species },
-            ...(components.element ? [{ trait_type: "Element", value: components.element }] : []),
-            ...(components.form ? [{ trait_type: "Form", value: components.form }] : []),
-            ...(components.anomalies ? components.anomalies.map(anomaly => ({ trait_type: "Anomaly", value: anomaly })) : [])
-          ]
-        };
-        
-        // Upload the metadata to IPFS
-        const metadataResult = await pinata.upload.public.json(metadataContent);
-        
-        // Create IPFS data object to return
-        ipfsData = {
-          image: `ipfs://${imageResult.cid}`,
-          imageUrl: `https://${process.env.NEXT_PUBLIC_GATEWAY_URL}/ipfs/${imageResult.cid}`,
-          metadata: `ipfs://${metadataResult.cid}`,
-          metadataUrl: `https://${process.env.NEXT_PUBLIC_GATEWAY_URL}/ipfs/${metadataResult.cid}`
-        };
-        
-        console.log("IPFS Upload Successful!");
-        console.log("Image CID:", imageResult.cid);
-        console.log("Metadata CID:", metadataResult.cid);
-      } catch (ipfsError) {
-        console.error("IPFS upload failed:", ipfsError);
-        // We'll continue even if IPFS upload fails
+    try {
+      console.log("Uploading to IPFS...");
+      
+      // Convert the image buffer to a Blob
+      const formData = new FormData();
+      formData.append('file', imageBuffer, {
+        filename,
+        contentType: 'image/jpeg'
+      });
+      
+      // Get the JWT token
+      const jwt = process.env.PINATA_JWT;
+      if (!jwt) {
+        throw new Error("Pinata JWT not configured");
       }
+      
+      // Upload image to IPFS using fetch
+      console.log("Uploading image to IPFS...");
+      const imageUploadResponse = await fetch('https://api.pinata.cloud/pinning/pinFileToIPFS', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${jwt}`
+        },
+        body: formData as any
+      });
+      
+      if (!imageUploadResponse.ok) {
+        const errorText = await imageUploadResponse.text();
+        throw new Error(`Image upload failed: ${imageUploadResponse.status} ${imageUploadResponse.statusText} - ${errorText}`);
+      }
+      
+      const imageResult = await imageUploadResponse.json();
+      const imageCid = imageResult.IpfsHash;
+      console.log(`Image uploaded successfully to IPFS with CID: ${imageCid}`);
+      
+      // Create metadata
+      const metadataContent = {
+        name: `${rarity} ${components.species}`,
+        description: `A ${rarity.toLowerCase()} ${components.species.toLowerCase()} fantasy creature`,
+        image: `ipfs://${imageCid}`,
+        attributes: [
+          { trait_type: "Rarity", value: rarity },
+          { trait_type: "Species", value: components.species },
+          ...(components.element ? [{ trait_type: "Element", value: components.element }] : []),
+          ...(components.form ? [{ trait_type: "Form", value: components.form }] : []),
+          ...(components.anomalies ? components.anomalies.map(anomaly => ({ trait_type: "Anomaly", value: anomaly })) : [])
+        ]
+      };
+      
+      // Upload metadata to IPFS
+      console.log("Uploading metadata to IPFS...");
+      const metadataUploadResponse = await fetch('https://api.pinata.cloud/pinning/pinJSONToIPFS', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${jwt}`
+        },
+        body: JSON.stringify(metadataContent)
+      });
+      
+      if (!metadataUploadResponse.ok) {
+        const errorText = await metadataUploadResponse.text();
+        throw new Error(`Metadata upload failed: ${metadataUploadResponse.status} ${metadataUploadResponse.statusText} - ${errorText}`);
+      }
+      
+      const metadataResult = await metadataUploadResponse.json();
+      const metadataCid = metadataResult.IpfsHash;
+      console.log(`Metadata uploaded successfully to IPFS with CID: ${metadataCid}`);
+      
+      // Generate gateway URLs
+      const gatewayUrl = process.env.NEXT_PUBLIC_GATEWAY_URL || 'gateway.pinata.cloud';
+      
+      // Create IPFS data object to return
+      ipfsData = {
+        image: `ipfs://${imageCid}`,
+        imageUrl: `https://${gatewayUrl}/ipfs/${imageCid}`,
+        metadata: `ipfs://${metadataCid}`,
+        metadataUrl: `https://${gatewayUrl}/ipfs/${metadataCid}`
+      };
+      
+      console.log("IPFS Upload Successful!");
+      
+    } catch (ipfsError) {
+      console.error("IPFS upload failed:", ipfsError);
+      // We'll continue with the generated image even if IPFS upload fails
     }
     
     // Return success response with IPFS data if available
     return NextResponse.json({ 
       success: true, 
-      imagePath: `/generated_images/${filename}`,
+      imagePath,
       metadata: {
         rarity,
         species: components.species,
@@ -206,9 +259,9 @@ export async function POST(request: NextRequest) {
     });
     
   } catch (error) {
-    console.error("Error generating creature:", error);
+    console.error("Error:", error);
     return NextResponse.json(
-      { success: false, error: "Failed to generate creature" },
+      { success: false, error: error instanceof Error ? error.message : String(error) },
       { status: 500 }
     );
   }

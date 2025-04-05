@@ -12,6 +12,21 @@ const nextConfig = {
         hostname: "ipfs.io",
         pathname: "/**",
       },
+      {
+        protocol: "https",
+        hostname: "gateway.pinata.cloud",
+        pathname: "/**",
+      },
+      {
+        protocol: "https",
+        hostname: "**.mypinata.cloud",
+        pathname: "/**",
+      },
+      {
+        protocol: "https",
+        hostname: "**.ipfs.dweb.link",
+        pathname: "/**",
+      }
     ],
   },
 };

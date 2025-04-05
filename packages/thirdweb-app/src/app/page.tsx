@@ -100,14 +100,13 @@ export default function Home() {
         <div className="mt-8 flex flex-col md:flex-row gap-8 items-start">
           <div className="flex flex-col items-center">
             <div className="relative w-full max-w-md h-[400px] border border-gray-200 rounded-lg">
-              {/* Use standard img tag with absolute URL */}
               <img 
                 src={result}
                 alt={`${metadata.rarity} ${metadata.species}`}
                 className="rounded-lg shadow-lg object-contain w-full h-full"
                 onError={(e) => {
                   console.error("Image failed to load:", result);
-                  e.currentTarget.src = "/sample_dragon.jpg"; // Fallback image
+                  e.currentTarget.src = "/sample_dragon.svg";
                 }}
               />
             </div>
