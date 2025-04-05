@@ -27,12 +27,9 @@ const QrScanner = () => {
   }, [scanning]);
 
   return (
-    <div className="text-white">
+    <div className="text-black">
       <h1>Scan QR Code</h1>
       <div id="reader" style={{ width: "100%" }}></div>
-      <button onClick={() => setScanning(!scanning)}>
-        {scanning ? "Stop Scanning" : "Start Scanning"}
-      </button>
     </div>
   );
 };

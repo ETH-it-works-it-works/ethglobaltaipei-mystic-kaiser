@@ -19,7 +19,8 @@ const darkMystic = localFont({
 
 export const metadata: Metadata = {
   title: "Mystic Kaizer",
-  description: "Mystic Kaizer",
+  description:
+    "The unique pvp game where you fight your friends to become the best mystic in the world",
 };
 
 export default function RootLayout({
