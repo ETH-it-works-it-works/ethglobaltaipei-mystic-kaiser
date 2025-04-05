@@ -29,6 +29,8 @@ export interface Room {
   player2_atk_min: number | null;
   player2_atk_max: number | null;
   current_turn: string | null;
+  player1_nft_name?: string;
+  player2_nft_name?: string | null;
 }
 
 export interface BattleState {

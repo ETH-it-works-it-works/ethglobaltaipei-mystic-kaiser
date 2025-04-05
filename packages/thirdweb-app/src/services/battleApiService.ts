@@ -11,11 +11,13 @@ export class BattleApiService {
       address: string;
       health: number;
       attack: { min: number; max: number };
+      nftName?: string;
     };
     player2: {
       address: string;
       health: number;
       attack: { min: number; max: number };
+      nftName?: string;
     } | null;
     currentTurn: string | null;
   }> {
@@ -39,7 +41,8 @@ export class BattleApiService {
         player1: {
           address: roomData.player1_address,
           health: roomData.player1_health,
-          attack: { min: roomData.player1_atk_min, max: roomData.player1_atk_max }
+          attack: { min: roomData.player1_atk_min, max: roomData.player1_atk_max },
+          nftName: roomData.player1_nft_name || undefined
         },
         player2: roomData.player2_address ? {
           address: roomData.player2_address,
@@ -47,7 +50,8 @@ export class BattleApiService {
           attack: { 
             min: roomData.player2_atk_min || 0, 
             max: roomData.player2_atk_max || 0 
-          }
+          },
+          nftName: roomData.player2_nft_name || undefined
         } : null,
         currentTurn: roomData.current_turn
       };

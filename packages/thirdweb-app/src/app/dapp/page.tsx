@@ -214,20 +214,9 @@ export default function Dapp() {
               className={`flex items-center gap-3 p-3 rounded-lg transition-colors ${
                 selectedTab === "shop" ? "bg-purple-800" : "hover:bg-gray-800"
               }`}
-              onClick={() => setSelectedTab("shop")}
+              onClick={() => router.push('/marketplace')}
             >
               <span className="font-medium">Marketplace</span>
-            </button>
-
-            <button
-              className={`flex items-center gap-3 p-3 rounded-lg transition-colors ${
-                selectedTab === "friends"
-                  ? "bg-purple-800"
-                  : "hover:bg-gray-800"
-              }`}
-              onClick={() => setSelectedTab("friends")}
-            >
-              <span className="font-medium">Friends</span>
             </button>
           </div>
         </div>
