@@ -60,6 +60,8 @@ interface MultiBaasHook {
     pageNum: number,
     limit: number
   ) => Promise<Array<Event> | null>;
+  getActiveListingId: () => Promise<Array<String> | null>;
+  getActiveListing: () => Promise<Array<Event> | null>;
 }
 
 const useMultiBaasWithThirdweb = (): MultiBaasHook => {
@@ -373,6 +375,66 @@ const useMultiBaasWithThirdweb = (): MultiBaasHook => {
     [eventsApi, chain, eventFactoryAddressLabel, eventFactoryContractLabel]
   );
 
+  const getActiveListingId =
+    useCallback(async (): Promise<Array<String> | null> => {
+      try {
+        const response = await callContractFunction(
+          "getActiveBeastListings",
+          "marketplace",
+          "marketplace1"
+        );
+        return response as Array<String>;
+      } catch (err) {
+        console.error("Error getting active beast listings:", err);
+        return null;
+      }
+    }, [callContractFunction, matchAddressLabel, matchContractLabel]);
+
+  const getActiveListing =
+    useCallback(async (): Promise<Array<Event> | null> => {
+      try {
+        // Get the active listing IDs from getListingId
+        const activeListingIds = await getActiveListingId();
+
+        // If no listing IDs were found, return null
+        if (!activeListingIds || activeListingIds.length === 0) {
+          console.log("No active listing IDs found");
+          return null;
+        }
+
+        const eventSignature =
+          "BeastListed(uint256,uint256,address,address,uint256)";
+        const response = await eventsApi.listEvents(
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          false,
+          chain,
+          "marketplace",
+          "marketplace1",
+          eventSignature,
+          50
+        );
+
+        if (!response.data.result || response.data.result.length === 0) {
+          console.log("No events found");
+          return null;
+        }
+
+        // Filter events by the IDs we retrieved
+        const filteredEvents = response.data.result.filter((event) =>
+          activeListingIds.includes(event.event.inputs[0].value)
+        );
+
+        return filteredEvents.length > 0 ? filteredEvents : null;
+      } catch (err) {
+        console.error("Error getting active listings:", err);
+        return null;
+      }
+    }, [eventsApi, chain, getActiveListingId]);
+
   return {
     getChainStatus,
     getBattleCounter,
@@ -384,6 +446,8 @@ const useMultiBaasWithThirdweb = (): MultiBaasHook => {
     getBattleEndedEvents,
     getOrganiserEvent,
     getOrganisedEvents,
+    getActiveListingId,
+    getActiveListing,
   };
 };
 
