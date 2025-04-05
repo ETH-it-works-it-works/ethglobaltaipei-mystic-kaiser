@@ -11,42 +11,42 @@ import Link from "next/link";
 export default function UserNFTs() {
   const [nfts, setNfts] = useState<NFT[]>([]);
   const [loading, setLoading] = useState(true);
-  const { eventImplementationContract, account } = useThirdWeb();
+  const { account } = useThirdWeb();
   const { selectedNFT, setSelectedNFT } = useNFTContext();
 
-  useEffect(() => {
-    console.log("selectedNFT:", selectedNFT);
-    const fetchNFTs = async () => {
-      if (!eventImplementationContract) return;
-      if (!account) return;
-      try {
-        const ownedNFTs = await getOwnedNFTs({
-          contract: eventImplementationContract,
-          owner: account.address,
-        });
+  // useEffect(() => {
+  //   console.log("selectedNFT:", selectedNFT);
+  //   const fetchNFTs = async () => {
+  //     if (!eventImplementationContract) return;
+  //     if (!account) return;
+  //     try {
+  //       const ownedNFTs = await getOwnedNFTs({
+  //         contract: eventImplementationContract,
+  //         owner: account.address,
+  //       });
 
-        // Convert IPFS URI
-        const updatedNFTs = ownedNFTs.map((nft) => ({
-          ...nft,
-          metadata: {
-            ...nft.metadata,
-            image: nft.metadata.image?.replace(
-              "ipfs://",
-              "https://ipfs.io/ipfs/"
-            ),
-          },
-        }));
+  //       // Convert IPFS URI
+  //       const updatedNFTs = ownedNFTs.map((nft) => ({
+  //         ...nft,
+  //         metadata: {
+  //           ...nft.metadata,
+  //           image: nft.metadata.image?.replace(
+  //             "ipfs://",
+  //             "https://ipfs.io/ipfs/"
+  //           ),
+  //         },
+  //       }));
 
-        console.log("Owned NFTs:", updatedNFTs);
-        setNfts(updatedNFTs);
-      } catch (error) {
-        console.error("Error fetching NFTs:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchNFTs();
-  }, [account, eventImplementationContract]);
+  //       console.log("Owned NFTs:", updatedNFTs);
+  //       setNfts(updatedNFTs);
+  //     } catch (error) {
+  //       console.error("Error fetching NFTs:", error);
+  //     } finally {
+  //       setLoading(false);
+  //     }
+  //   };
+  //   fetchNFTs();
+  // }, [account, eventImplementationContract]);
 
   if (loading)
     return (
