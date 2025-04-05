@@ -2,188 +2,156 @@
 
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
-import Web3 from "web3";
-import * as MultiBaas from "@curvegrid/multibaas-sdk";
-
-interface NFTMetadata {
-  name: string;
-  description: string;
-  image: string;
-}
-
-interface ListingItem {
-  listingid: number;
-  nftaddress: string;
-  price: string;
-  seller: string;
-  tokenid: number;
-  metadata?: NFTMetadata;
-}
+import Navbar from "@/components/custom/navbar";
+import { marketplaceService, ListingItem } from "@/services/marketplaceService";
+import { useThirdWeb } from "@/hooks/useThirdWeb";
 
 export default function Marketplace() {
+  const { account, client } = useThirdWeb();
   const [items, setItems] = useState<ListingItem[]>([]);
-  const hostname = process.env.NEXT_PUBLIC_MULTIBAAS_DEPLOYMENT_URL;
-  const apiKey = process.env.NEXT_PUBLIC_MULTIBAAS_DAPP_USER_API_KEY;
-  const config = new MultiBaas.Configuration({
-    basePath: hostname + "/api/v0",
-    accessToken: apiKey,
+  const [selectedItem, setSelectedItem] = useState<ListingItem | null>(null);
+  const [showModal, setShowModal] = useState(false);
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [isApproving, setIsApproving] = useState(false);
+  const [isRemoving, setIsRemoving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [newListing, setNewListing] = useState({
+    nftAddress: '',
+    tokenId: '',
+    price: ''
   });
-  const contractsApi = new MultiBaas.ContractsApi(config);
-  const eventQueriesApi = new MultiBaas.EventQueriesApi(config);
-  const chain = "ethereum";
-  const deployedAddressOrAlias = "marketplace1";
-  const contractLabel = "marketplace";
-  const contractMethod = "getActiveBeastListings";
-  const payload: MultiBaas.PostMethodArgs = {
-    args: [],
-  };
-  const requestBody: MultiBaas.EventQuery = {
-    events: [
-      {
-        select: [
-          {
-            name: "listingId",
-            type: "input",
-            alias: "",
-            inputIndex: 0,
-          },
-          {
-            name: "tokenId",
-            type: "input",
-            alias: "",
-            inputIndex: 1,
-          },
-          {
-            name: "seller",
-            type: "input",
-            alias: "",
-            inputIndex: 2,
-          },
-          {
-            name: "nftAddress",
-            type: "input",
-            alias: "",
-            inputIndex: 3,
-          },
-          {
-            name: "price",
-            type: "input",
-            alias: "",
-            inputIndex: 4,
-          },
-        ],
-        eventName: "BeastListed(uint256,uint256,address,address,uint256)",
-      },
-    ],
-  };
-  const web3 = new Web3("https://alfajores-forno.celo-testnet.org");
-
-  const fetchNFTMetadata = async (
-    nftAddress: string,
-    tokenId: number
-  ): Promise<NFTMetadata> => {
-    try {
-      const contract = new web3.eth.Contract([
-        {
-          "inputs": [
-            {
-              "internalType": "uint256",
-              "name": "tokenId",
-              "type": "uint256"
-            }
-          ],
-          "name": "tokenURI",
-          "outputs": [
-            {
-              "internalType": "string",
-              "name": "",
-              "type": "string"
-            }
-          ],
-          "stateMutability": "view",
-          "type": "function"
-        }
-      ], nftAddress);
-
-      const tokenURI = (await contract.methods
-        .tokenURI(tokenId)
-        .call()) as string;
-      const ipfsUrl = tokenURI.replace("ipfs://", "https://ipfs.io/ipfs/");
-      const response = await fetch(ipfsUrl);
-      return await response.json();
-    } catch (error) {
-      console.error("Error fetching NFT metadata:", error);
-      return {
-        name: "Unknown NFT",
-        description: "Metadata not available",
-        image: "https://via.placeholder.com/400",
-      };
-    }
-  };
+  const [isBuying, setIsBuying] = useState(false);
+  const [buyError, setBuyError] = useState<string | null>(null);
 
   useEffect(() => {
-    async function fetchListings() {
-      try {
-        const response = await contractsApi.callContractFunction(
-          chain,
-          deployedAddressOrAlias,
-          contractLabel,
-          contractMethod,
-          payload
-        );
-        const activeListingId: any = response.data.result;
-        console.log("Function call result:\n", activeListingId.output);
-
-        const response2 = await eventQueriesApi.executeArbitraryEventQuery(
-          requestBody
-        );
-        const activeListing: any = response2.data.result;
-        console.log("Event query result:\n", activeListing.rows);
-
-        const activeIds = activeListingId.output;
-        const matchedListings = activeListing.rows.filter((item: any) =>
-          activeIds.includes(item.listingid)
-        );
-
-        // Fetch metadata for each listing
-        const listingsWithMetadata = await Promise.all(
-          matchedListings.map(async (item: any) => {
-            const metadata = await fetchNFTMetadata(
-              item.nftaddress,
-              item.tokenid
-            );
-            return { ...item, metadata };
-          })
-        );
-
-        console.log(
-          "Filtered active listings with metadata:\n",
-          listingsWithMetadata
-        );
-        setItems(listingsWithMetadata);
-      } catch (e) {
-        if (e) {
-          console.log(`${e}`);
-        } else {
-          console.log("An unexpected error occurred:", e);
-        }
-      }
-    }
-    fetchListings();
+    const fetchData = async () => {
+      const listings = await marketplaceService.fetchListings();
+      setItems(listings);
+    };
+    fetchData();
   }, []);
 
-  const handleBuy = (listingId: number) => {
-    console.log(`Buying item with listing ID: ${listingId}`);
-    // Add logic to handle the purchase
+  const handleViewDetails = (item: ListingItem) => {
+    setSelectedItem(item);
+    setShowModal(true);
+  };
+
+  const handleCloseModal = () => {
+    setShowModal(false);
+    setSelectedItem(null);
+  };
+
+  const handleAddListing = () => {
+    setShowAddModal(true);
+  };
+
+  const handleCloseAddModal = () => {
+    setShowAddModal(false);
+    setNewListing({ nftAddress: '', tokenId: '', price: '' });
+  };
+
+  const handleSubmitListing = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!account) {
+      setError("Please connect your wallet first");
+      return;
+    }
+
+    try {
+      setIsApproving(true);
+      setError(null);
+      
+      // Convert price to wei (multiply by 10^18)
+      const priceInWei = (Number(newListing.price) * 10 ** 18).toString();
+      
+      await marketplaceService.addListing(
+        {
+          ...newListing,
+          price: priceInWei
+        },
+        account,
+        client
+      );
+      
+      // Refresh listings
+      const listings = await marketplaceService.fetchListings();
+      setItems(listings);
+      
+      // Reset form
+      setNewListing({
+        nftAddress: '',
+        tokenId: '',
+        price: ''
+      });
+      setShowAddModal(false);
+    } catch (error) {
+      console.error("Error adding listing:", error);
+      setError(error instanceof Error ? error.message : "Failed to add listing");
+    } finally {
+      setIsApproving(false);
+    }
+  };
+
+  const handleRemoveFromMarket = async (listingId: number) => {
+    if (!account) {
+      setError("Please connect your wallet first");
+      return;
+    }
+
+    setIsRemoving(true);
+    setError(null);
+
+    try {
+      await marketplaceService.removeListing(listingId, account, client);
+      setItems(items.filter(item => item.listingid !== listingId));
+      handleCloseModal();
+    } catch (error) {
+      console.error("Error removing NFT from market:", error);
+      setError(error instanceof Error ? error.message : "Failed to remove listing");
+    } finally {
+      setIsRemoving(false);
+    }
+  };
+
+  const handleBuy = async (listingId: number) => {
+    if (!account) {
+      setError("Please connect your wallet first");
+      return;
+    }
+
+    setIsBuying(true);
+    setBuyError(null);
+
+    try {
+      await marketplaceService.buyNFT(listingId, account, client);
+      // Refresh listings after successful purchase
+      const listings = await marketplaceService.fetchListings();
+      setItems(listings);
+      setShowModal(false);
+      setSelectedItem(null);
+    } catch (error) {
+      console.error("Error buying NFT:", error);
+      setBuyError(error instanceof Error ? error.message : "Failed to buy NFT");
+    } finally {
+      setIsBuying(false);
+    }
   };
 
   return (
     <main className="p-6 pb-10 min-h-[100vh] flex items-center justify-center container max-w-screen-lg mx-auto">
       <Navbar />
-      <div className="py-10">
-        <h1 className="text-4xl font-extrabold mb-12 text-center text-gray-800">
-          Marketplace
-        </h1>
+      <div className="py-10 w-full">
+        <div className="flex justify-between items-center mb-12">
+          <h1 className="text-4xl font-extrabold text-gray-800">
+            Marketplace
+          </h1>
+          <Button 
+            className="bg-green-600 text-white hover:bg-green-700"
+            onClick={handleAddListing}
+          >
+            Add Listing
+          </Button>
+        </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
           {items.map((item) => (
             <div
@@ -202,17 +170,198 @@ export default function Marketplace() {
                 {item.metadata?.description}
               </p>
               <p className="text-gray-800 font-semibold text-lg mb-6">
-                Price: {item.price} CELO
+                Price: {Number(item.price) / 10 ** 18} A-CELO
               </p>
-              <Button
-                className="bg-blue-600 text-white hover:bg-blue-700 transition-colors duration-300"
-                onClick={() => handleBuy(item.listingid)}
-              >
-                Buy Now
-              </Button>
+              <div className="flex gap-4">
+                <Button
+                  className="bg-gray-600 text-white hover:bg-gray-700 transition-colors duration-300"
+                  onClick={() => handleViewDetails(item)}
+                >
+                  View Details
+                </Button>
+                {account && item.seller && typeof item.seller === 'string' && 
+                  account.address.toLowerCase() === item.seller.toLowerCase() ? (
+                  <Button
+                    className="bg-red-600 text-white hover:bg-red-700 transition-colors duration-300"
+                    onClick={() => handleRemoveFromMarket(item.listingid)}
+                    disabled={isRemoving}
+                  >
+                    {isRemoving ? 'Removing...' : 'Remove from Market'}
+                  </Button>
+                ) : (
+                  <Button
+                    className="bg-blue-600 text-white hover:bg-blue-700 transition-colors duration-300"
+                    onClick={() => handleBuy(item.listingid)}
+                    disabled={isBuying}
+                  >
+                    {isBuying ? 'Buying...' : 'Buy Now'}
+                  </Button>
+                )}
+              </div>
             </div>
           ))}
         </div>
+
+        {/* Add Listing Modal */}
+        {showAddModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white p-8 rounded-lg max-w-md w-full">
+              <h2 className="text-2xl font-bold mb-6">Add New Listing</h2>
+              {error && (
+                <div className="mb-4 p-2 bg-red-100 text-red-700 rounded">
+                  {error}
+                </div>
+              )}
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-gray-700 mb-2">NFT Address</label>
+                  <input
+                    type="text"
+                    className="w-full p-2 border rounded"
+                    value={newListing.nftAddress}
+                    onChange={(e) => setNewListing({...newListing, nftAddress: e.target.value})}
+                    placeholder="0x..."
+                    disabled={isApproving}
+                  />
+                </div>
+                <div>
+                  <label className="block text-gray-700 mb-2">Token ID</label>
+                  <div className="flex gap-2">
+                    <input
+                      type="number"
+                      className="flex-1 p-2 border rounded"
+                      value={newListing.tokenId}
+                      onChange={(e) => setNewListing({...newListing, tokenId: e.target.value})}
+                      placeholder="Enter token ID"
+                      disabled={isApproving}
+                    />
+                    <a
+                      href={`https://alfajores.celoscan.io/token/${newListing.nftAddress}?a=${newListing.tokenId}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                    </a>
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-gray-700 mb-2">Price (A-CELO)</label>
+                  <input
+                    type="number"
+                    className="w-full p-2 border rounded"
+                    value={newListing.price}
+                    onChange={(e) => setNewListing({...newListing, price: e.target.value})}
+                    placeholder="Enter price in A-CELO"
+                    disabled={isApproving}
+                  />
+                </div>
+              </div>
+              <div className="flex justify-end gap-4 mt-6">
+                <Button
+                  className="bg-gray-500 text-white hover:bg-gray-600"
+                  onClick={handleCloseAddModal}
+                  disabled={isApproving}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  className="bg-green-600 text-white hover:bg-green-700"
+                  onClick={handleSubmitListing}
+                  disabled={isApproving}
+                >
+                  {isApproving ? "Approving NFT..." : "Submit"}
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Details Modal */}
+        {showModal && selectedItem && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white p-8 rounded-lg max-w-2xl w-full mx-4">
+              <h2 className="text-2xl font-bold mb-4">{selectedItem.metadata?.name}</h2>
+              <div className="grid grid-cols-2 gap-4 mb-6">
+                <div>
+                  <p className="text-gray-600">Token ID:</p>
+                  <div className="flex items-center gap-2">
+                    <p className="font-semibold">{selectedItem.tokenid}</p>
+                    <a
+                      href={`https://alfajores.celoscan.io/nft/${selectedItem.nftaddress}/${selectedItem.tokenid}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      <Button size="sm" className="bg-blue-600 text-white hover:bg-blue-700">
+                        View
+                      </Button>
+                    </a>
+                  </div>
+                </div>
+                <div>
+                  <p className="text-gray-600">Price:</p>
+                  <p className="font-semibold">{Number(selectedItem.price) / 10 ** 18} A-CELO</p>
+                </div>
+                <div>
+                  <p className="text-gray-600">Seller:</p>
+                  <div className="flex items-center gap-2">
+                    <p className="font-semibold break-all">{selectedItem.seller}</p>
+                    <a
+                      href={`https://alfajores.celoscan.io/address/${selectedItem.seller}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      <Button size="sm" className="bg-blue-600 text-white hover:bg-blue-700">
+                        View
+                      </Button>
+                    </a>
+                  </div>
+                </div>
+                <div>
+                  <p className="text-gray-600">NFT Address:</p>
+                  <div className="flex items-center gap-2">
+                    <p className="font-semibold break-all">{selectedItem.nftaddress}</p>
+                    <a
+                      href={`https://alfajores.celoscan.io/address/${selectedItem.nftaddress}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      <Button size="sm" className="bg-blue-600 text-white hover:bg-blue-700">
+                        View
+                      </Button>
+                    </a>
+                  </div>
+                </div>
+              </div>
+              <div className="flex justify-end">
+                <Button
+                  className="bg-gray-500 text-white hover:bg-gray-600"
+                  onClick={handleCloseModal}
+                >
+                  Close
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Buy Error Modal */}
+        {buyError && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white p-8 rounded-lg max-w-md w-full">
+              <h2 className="text-2xl font-bold mb-6">Error Buying NFT</h2>
+              <div className="mb-4 p-2 bg-red-100 text-red-700 rounded">
+                {buyError}
+              </div>
+              <div className="flex justify-end gap-4">
+                <Button
+                  className="bg-gray-500 text-white hover:bg-gray-600"
+                  onClick={() => setBuyError(null)}
+                >
+                  Close
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </main>
   );
