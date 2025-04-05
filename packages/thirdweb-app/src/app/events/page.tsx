@@ -42,19 +42,19 @@ export default function EventListingsPage() {
     });
   };
 
-  // Fetch events
-  //   useEffect(() => {
-  //     const fetchEvents = async () => {
-  //       setLoading(true);
-  //       const fetchedEvents = await getOrganisedEvents(page, eventsPerPage);
-  //       if (fetchedEvents) {
-  //         setEvents(extractEvents(fetchedEvents));
-  //       }
-  //       setLoading(false);
-  //     };
+//   Fetch events
+//     useEffect(() => {
+//       const fetchEvents = async () => {
+//         setLoading(true);
+//         const fetchedEvents = await getOrganisedEvents(page, eventsPerPage);
+//         if (fetchedEvents) {
+//           setEvents(extractEvents(fetchedEvents));
+//         }
+//         setLoading(false);
+//       };
 
-  //     fetchEvents();
-  //   }, [page, getOrganisedEvents]);
+//       fetchEvents();
+//     }, [page, getOrganisedEvents]);
 
   return (
     <main className="p-6 min-h-[100vh] container max-w-screen-lg mx-auto">
@@ -115,7 +115,7 @@ export default function EventListingsPage() {
         <nav className="flex flex-col items-center justify-center">
           <Link href={"/"}>Home Page</Link>
           <Link href={"/organiser"}>Organiser Page</Link>
-          <Link href={"/event/create"}>Event Creation Page</Link>
+          <Link href={"/events/create"}>Event Creation Page</Link>
         </nav>
       </div>
     </main>
