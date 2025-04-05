@@ -29,12 +29,14 @@ export async function GET(request: Request) {
       player1: {
         address: room.player1_address,
         health: room.player1_health,
-        attack: { min: room.player1_atk_min, max: room.player1_atk_max }
+        attack: { min: room.player1_atk_min, max: room.player1_atk_max },
+        nftName: room.player1_nft_name || undefined
       },
       player2: room.player2_address ? {
         address: room.player2_address,
         health: room.player2_health,
-        attack: { min: room.player2_atk_min, max: room.player2_atk_max }
+        attack: { min: room.player2_atk_min, max: room.player2_atk_max },
+        nftName: room.player2_nft_name || undefined
       } : null,
       currentTurn: room.current_turn
     });

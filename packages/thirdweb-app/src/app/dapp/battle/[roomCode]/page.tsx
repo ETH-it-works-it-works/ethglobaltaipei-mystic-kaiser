@@ -35,9 +35,17 @@ export default function BattleRoomPage({ params }: { params: PageParams }) {
   const [subscription, setSubscription] = useState<any>(null);
   const [showResultModal, setShowResultModal] = useState(false);
   const [battleResult, setBattleResult] = useState<'victory' | 'defeat' | null>(null);
+  const [initialP1Health, setInitialP1Health] = useState<number | null>(null);
+  const [initialP2Health, setInitialP2Health] = useState<number | null>(null);
+  const [isAttacking, setIsAttacking] = useState(false);
 
   // Get current user's address from URL parameters
   const currentUserAddress = searchParams.get('username') || 'Anonymous';
+  // Get the NFT image from URL parameter
+  const myNftImage = searchParams.get('nftImage');
+  
+  // State to store opponent's NFT image when it's received
+  const [opponentNftImage, setOpponentNftImage] = useState<string | null>(null);
 
   // Calculate if it's the current player's turn
   const isMyTurn = useMemo(() => {
@@ -109,6 +117,14 @@ export default function BattleRoomPage({ params }: { params: PageParams }) {
           return;
         }
 
+        // Store initial health values to use as max health
+        if (initialP1Health === null) {
+          setInitialP1Health(battleStatus.player1.health);
+        }
+        if (battleStatus.player2 && initialP2Health === null) {
+          setInitialP2Health(battleStatus.player2.health);
+        }
+
         // Convert API response to room structure
         const roomData = {
           code: roomCode,
@@ -117,10 +133,12 @@ export default function BattleRoomPage({ params }: { params: PageParams }) {
           player1_health: battleStatus.player1.health,
           player1_atk_min: battleStatus.player1.attack.min,
           player1_atk_max: battleStatus.player1.attack.max,
+          player1_nft_name: battleStatus.player1.nftName,
           player2_address: battleStatus.player2?.address || null,
           player2_health: battleStatus.player2?.health || null,
           player2_atk_min: battleStatus.player2?.attack.min || null,
           player2_atk_max: battleStatus.player2?.attack.max || null,
+          player2_nft_name: battleStatus.player2?.nftName || null,
           current_turn: battleStatus.currentTurn
         };
         
@@ -187,6 +205,20 @@ export default function BattleRoomPage({ params }: { params: PageParams }) {
         const sub = BattleApiService.subscribeToBattle(roomCode, (payload) => {
           console.log('Update received:', payload);
           
+          // Check if this is a new player joining with NFT image
+          if (payload.table === 'gameLobbies' && 
+              payload.new.player2_address && 
+              payload.new.status === 'ready' &&
+              searchParams.get('nftImage') && 
+              currentUserAddress === payload.new.player1_address) {
+            // Broadcast my NFT image for the new player
+            supabase.channel(`nft-image-${roomCode}`).send({
+              type: 'broadcast',
+              event: 'player1-nft-image',
+              payload: { nftImage: searchParams.get('nftImage') }
+            });
+          }
+          
           // Handle game lobby updates
           if (payload.table === 'gameLobbies') {
             const newRoom = payload.new;
@@ -225,8 +257,38 @@ export default function BattleRoomPage({ params }: { params: PageParams }) {
             setBattleLog(prev => [...prev, `${newLog.attacker} attacked for ${newLog.damage} damage!`]);
           }
         });
+        
+        // Listen for opponent's NFT image
+        const nftImageChannel = supabase.channel(`nft-image-${roomCode}`);
+        
+        // Player 1 listens for player 2's NFT image
+        if (currentUserAddress === roomData.player1_address) {
+          nftImageChannel.on('broadcast', { event: 'player2-nft-image' }, ({ payload }) => {
+            console.log('Received Player 2 NFT image:', payload.nftImage);
+            setOpponentNftImage(payload.nftImage);
+          });
+        }
+        
+        // Player 2 listens for player 1's NFT image
+        if (currentUserAddress === roomData.player2_address) {
+          nftImageChannel.on('broadcast', { event: 'player1-nft-image' }, ({ payload }) => {
+            console.log('Received Player 1 NFT image:', payload.nftImage);
+            setOpponentNftImage(payload.nftImage);
+          });
+          
+          // Player 2 broadcasts their NFT image when joining
+          if (searchParams.get('nftImage')) {
+            nftImageChannel.send({
+              type: 'broadcast',
+              event: 'player2-nft-image',
+              payload: { nftImage: searchParams.get('nftImage') }
+            });
+          }
+        }
+        
+        nftImageChannel.subscribe();
         setSubscription(sub);
-
+        
         setIsLoading(false);
       } catch (error) {
         console.error('Error initializing room:', error);
@@ -241,7 +303,7 @@ export default function BattleRoomPage({ params }: { params: PageParams }) {
         subscription.unsubscribe();
       }
     };
-  }, [roomCode, router, currentUserAddress]);
+  }, [roomCode, router, currentUserAddress, searchParams, myNftImage, initialP1Health, initialP2Health]);
 
   const handleReturnHome = () => {
     if (subscription) {
@@ -254,6 +316,8 @@ export default function BattleRoomPage({ params }: { params: PageParams }) {
     if (!room || !isMyTurn) return;
 
     try {
+      setIsAttacking(true);
+      
       // Call the attack API
       const result = await BattleApiService.performAttack(roomCode, currentUserAddress, damage);
 
@@ -279,11 +343,14 @@ export default function BattleRoomPage({ params }: { params: PageParams }) {
       toast("Attack Failed", {
         description: "There was an error processing your attack.",
       });
+    } finally {
+      // We don't set isAttacking back to false since the turn has changed
+      // It will reset when it becomes the player's turn again
     }
   };
 
   const handleAttackClick = async () => {
-    if (!room || !isMyTurn) return;
+    if (!room || !isMyTurn || isAttacking) return;
     
     // Get attack range for current player
     const isPlayer1 = currentUserAddress === room.player1_address;
@@ -300,16 +367,18 @@ export default function BattleRoomPage({ params }: { params: PageParams }) {
     return currentUserAddress === room?.player1_address;
   }, [currentUserAddress, room?.player1_address]);
 
-  // Get health values from correct perspective
-  const myHealth = useMemo(() => {
-    if (!room) return 1000; // default health
-    return isPlayer1 ? room.player1_health : room.player2_health;
-  }, [isPlayer1, room]);
+  // Calculate health percentage for player 1
+  const player1HealthPercent = useMemo(() => {
+    if (!room || !initialP1Health) return 100;
+    return Math.max(0, Math.min(100, (room.player1_health / initialP1Health) * 100));
+  }, [room, initialP1Health]);
 
-  const opponentHealth = useMemo(() => {
-    if (!room) return 1000; // default health
-    return isPlayer1 ? room.player2_health : room.player1_health;
-  }, [isPlayer1, room]);
+  // Calculate health percentage for player 2
+  const player2HealthPercent = useMemo(() => {
+    if (!room || !initialP2Health) return 100;
+    if (room.player2_health === null) return 0;
+    return Math.max(0, Math.min(100, (room.player2_health / initialP2Health) * 100));
+  }, [room, initialP2Health]);
 
   // Get player names from correct perspective
   const myName = currentUserAddress;
@@ -317,6 +386,13 @@ export default function BattleRoomPage({ params }: { params: PageParams }) {
     if (!room) return 'Waiting...';
     return isPlayer1 ? room.player2_address : room.player1_address;
   }, [isPlayer1, room]);
+
+  // Reset isAttacking when it's the player's turn again
+  useEffect(() => {
+    if (isMyTurn) {
+      setIsAttacking(false);
+    }
+  }, [isMyTurn]);
 
   if (isLoading) {
     return (
@@ -355,43 +431,103 @@ export default function BattleRoomPage({ params }: { params: PageParams }) {
         )}
 
         {/* Player Names and Health Bars */}
-        <div className="flex justify-between items-center w-full mt-16 mb-8">
-          {/* My Info */}
-          <div className="w-1/2 pr-2">
-            <div className="flex flex-col text-xl font-bold mb-2">
-              <Image src="/landing-page/common-2.png" alt="Player NFT" width={300} height={300} className="rounded-md border-2 border-yellow-500" />
-              <span>You:</span> <span className="text-gray-500">{myName.substring(0, 6)}...{myName.substring(myName.length - 4)}</span>
+        {room && (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+            {/* Player 1 */}
+            <div className={`p-4 rounded-lg ${currentUserAddress === room.player1_address ? 'bg-blue-800/50 border border-blue-500' : 'bg-gray-800/50'}`}>
+              <div className="flex items-center mb-3">
+                <div className="relative w-16 h-16 mr-3 rounded-full overflow-hidden border-2 border-blue-500">
+                  {(currentUserAddress === room.player1_address && myNftImage) || 
+                   (currentUserAddress === room.player2_address && opponentNftImage) ? (
+                    <Image
+                      src={currentUserAddress === room.player1_address ? myNftImage! : opponentNftImage!}
+                      alt={room.player1_nft_name || "Player 1 NFT"}
+                      fill
+                      className="object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full bg-blue-900 flex items-center justify-center text-white text-2xl">
+                      P1
+                    </div>
+                  )}
+                </div>
+                <div>
+                  <div className="font-bold">
+                    {currentUserAddress === room.player1_address ? "You" : "Opponent"}
+                  </div>
+                  <div className="text-xs text-gray-300 truncate max-w-[150px]">
+                    {room.player1_address}
+                  </div>
+                  {room.player1_nft_name && (
+                    <div className="mt-1 text-sm text-blue-300 font-semibold">
+                      {room.player1_nft_name}
+                    </div>
+                  )}
+                </div>
+              </div>
+              
+              {/* Health bar and stats */}
+              <div className="mb-2">
+                <div className="h-4 bg-gray-200 rounded-full overflow-hidden">
+                  <div 
+                    className="h-full bg-green-500 transition-all duration-300"
+                    style={{ width: `${player1HealthPercent}%` }}
+                  ></div>
+                </div>
+                <div className="text-sm mt-1">
+                  HP: {room.player1_health || 0} / {initialP1Health || room.player1_health || 100}
+                </div>
+              </div>
             </div>
-            <div className="h-4 bg-gray-200 rounded-full overflow-hidden">
-              <div 
-                className="h-full bg-green-500 transition-all duration-300"
-                style={{ width: `${(myHealth / 1000) * 100}%` }}
-              ></div>
-            </div>
-            <div className="text-sm mt-1">
-              HP: {myHealth}/1000
+
+            {/* Player 2 */}
+            <div className={`p-4 rounded-lg ${currentUserAddress === room.player2_address ? 'bg-blue-800/50 border border-blue-500' : 'bg-gray-800/50'}`}>
+              <div className="flex items-center mb-3">
+                <div className="relative w-16 h-16 mr-3 rounded-full overflow-hidden border-2 border-red-500">
+                  {(currentUserAddress === room.player2_address && myNftImage) || 
+                   (currentUserAddress === room.player1_address && opponentNftImage) ? (
+                    <Image
+                      src={currentUserAddress === room.player2_address ? myNftImage! : opponentNftImage!}
+                      alt={room.player2_nft_name || "Player 2 NFT"}
+                      fill
+                      className="object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full bg-red-900 flex items-center justify-center text-white text-2xl">
+                      P2
+                    </div>
+                  )}
+                </div>
+                <div>
+                  <div className="font-bold">
+                    {currentUserAddress === room.player2_address ? "You" : "Opponent"}
+                  </div>
+                  <div className="text-xs text-gray-300 truncate max-w-[150px]">
+                    {room.player2_address}
+                  </div>
+                  {room.player2_nft_name && (
+                    <div className="mt-1 text-sm text-red-300 font-semibold">
+                      {room.player2_nft_name}
+                    </div>
+                  )}
+                </div>
+              </div>
+              
+              {/* Health bar and stats */}
+              <div className="mb-2">
+                <div className="h-4 bg-gray-200 rounded-full overflow-hidden">
+                  <div 
+                    className="h-full bg-green-500 transition-all duration-300"
+                    style={{ width: `${player2HealthPercent}%` }}
+                  ></div>
+                </div>
+                <div className="text-sm mt-1">
+                  HP: {room.player2_health || 0} / {initialP2Health || room.player2_health || 100}
+                </div>
+              </div>
             </div>
           </div>
-
-          <span className="text-5xl font-bold text-red-600">VS</span>
-
-          {/* Opponent Info */}
-          <div className="w-1/2 pl-2">
-            <div className="flex flex-col text-xl font-bold mb-2">
-              <Image src="/landing-page/common-2.png" alt="Player NFT" width={300} height={300} className="rounded-md border-2 border-yellow-500" />
-              <span>Opponent:</span> <span className="text-gray-500">{opponentName.substring(0, 6)}...{opponentName.substring(opponentName.length - 4)}</span>
-            </div>
-            <div className="h-4 bg-gray-200 rounded-full overflow-hidden">
-              <div 
-                className="h-full bg-green-500 transition-all duration-300"
-                style={{ width: `${(opponentHealth / 1000) * 100}%` }}
-              ></div>
-            </div>
-            <div className="text-sm mt-1">
-              HP: {opponentHealth}/1000
-            </div>
-          </div>
-        </div>
+        )}
 
         {/* Turn Indicator */}
         {gameState === 'playing' && (
@@ -405,14 +541,24 @@ export default function BattleRoomPage({ params }: { params: PageParams }) {
           <div className=" bg-black/40 backdrop-blur-md p-4 rounded-xl border border-white/10">
             <button
               onClick={handleAttackClick}
-              className="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-4 px-6 rounded-lg transition-all duration-200 transform hover:scale-105 flex items-center justify-center gap-2"
+              disabled={isAttacking}
+              className={`w-full ${isAttacking ? 'bg-gray-600' : 'bg-red-600 hover:bg-red-700'} text-white font-bold py-4 px-6 rounded-lg transition-all duration-200 transform ${isAttacking ? '' : 'hover:scale-105'} flex items-center justify-center gap-2`}
             >
-              <FaFistRaised className="text-xl" />
-              <span>Attack!</span>
-              <span className="text-sm">
-                ({isPlayer1 ? room.player1_atk_min : room.player2_atk_min}-
-                {isPlayer1 ? room.player1_atk_max : room.player2_atk_max} damage)
-              </span>
+              {isAttacking ? (
+                <>
+                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+                  <span>Storing attack onchain...</span>
+                </>
+              ) : (
+                <>
+                  <FaFistRaised className="text-xl" />
+                  <span>Attack!</span>
+                  <span className="text-sm">
+                    ({isPlayer1 ? room.player1_atk_min : room.player2_atk_min}-
+                    {isPlayer1 ? room.player1_atk_max : room.player2_atk_max} damage)
+                  </span>
+                </>
+              )}
             </button>
           </div>
         )}

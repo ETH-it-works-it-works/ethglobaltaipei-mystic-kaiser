@@ -33,6 +33,7 @@ export interface RoomConfig {
   atkMin: number;
   atkMax: number;
   health: number;
+  nftName?: string;
 }
 
 // Define the type to match the actual database columns
