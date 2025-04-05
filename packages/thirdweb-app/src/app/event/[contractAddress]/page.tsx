@@ -104,6 +104,12 @@ export default function ContractAddressPage() {
     );
   }
 
+  const userInfo = JSON.stringify({
+    eventAddress: contractAddress,
+    address: account?.address as string,
+    scannedPerson: account?.address as string,
+  });
+
   const onStartEvent = async () => {
     try {
       const response = await fetch("/api/event/start", {
@@ -235,7 +241,7 @@ export default function ContractAddressPage() {
           {account?.address ? (
             <>
               <div className="bg-white p-4 rounded-lg shadow-lg">
-                <QRCode value={account?.address} size={256} />
+                <QRCode value={userInfo} size={256} />
               </div>
 
               <div className="text-center">

@@ -8,6 +8,7 @@ const {
 } = process.env;
 
 export const POST = async (request: Request) => {
+  console.log("Request received", request);
   const { eventAddress, address, scannedPerson } = await request.json();
 
   if (

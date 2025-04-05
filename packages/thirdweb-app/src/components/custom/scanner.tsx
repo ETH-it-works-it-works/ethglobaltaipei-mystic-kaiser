@@ -38,7 +38,11 @@ const QrScanner = ({ onSuccess }: QrScannerProps) => {
           console.log("Scanned Data:", scannedData); // Log the scanned data for validatio
 
           // Validate required fields
-          if (!scannedData.contractAddress || !scannedData.scannedAddress) {
+          if (
+            !scannedData.eventAddress ||
+            !scannedData.address ||
+            !scannedData.scannedPerson
+          ) {
             throw new Error("Invalid QR code data. Missing required fields.");
           }
 
@@ -49,8 +53,8 @@ const QrScanner = ({ onSuccess }: QrScannerProps) => {
             },
             body: JSON.stringify({
               address: account?.address as string,
-              eventAddress: scannedData.contractAddress,
-              scannedPerson: scannedData.scannedAddress,
+              eventAddress: scannedData.eventAddress,
+              scannedPerson: scannedData.scannedPerson,
             }),
           });
 
