@@ -127,7 +127,7 @@ export const useThirdWeb = (): ThirdWebHook => {
   const nftContract = useMemo(() => {
     if (!client) return null;
     return getContract({
-      address: "0x360E849E2b04C558067bC17Cc24bC575076eAE9F", // NFT contract address
+      address: "0xc61BF2E3cD2E9C25619aAb85f516E7160f4e31c0", // NFT contract address
       chain,
       client,
     });

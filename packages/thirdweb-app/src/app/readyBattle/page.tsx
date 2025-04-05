@@ -8,6 +8,7 @@ import { useThirdWeb } from "@/hooks/useThirdWeb";
 import { useNFTContext } from "@/contexts/NFTContext";
 import Image from "next/image";
 import Link from "next/link";
+import Navbar from "@/components/custom/navbar";
 
 const NFT_CONTRACT_ADDRESS = "0x360E849E2b04C558067bC17Cc24bC575076eAE9F";
 
@@ -39,7 +40,6 @@ export default function UserNFTs() {
           },
         }));
 
-        console.log("Owned NFTs:", updatedNFTs);
         setNfts(updatedNFTs);
       } catch (error) {
         console.error("Error fetching NFTs:", error);
@@ -51,11 +51,9 @@ export default function UserNFTs() {
     fetchNFTs();
   }, []);
 
-  if (loading)
-    return <p className="text-white text-center">Loading Battle Cards...</p>;
-
   return (
     <div className="min-h-screen flex items-center flex-col justify-center">
+      <Navbar />
       <h1 className=" text-4xl font-bold text-black mb-20 text-center">
         {selectedNFT
           ? "Are you ready to fight?"

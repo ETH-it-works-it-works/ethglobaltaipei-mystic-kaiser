@@ -106,7 +106,9 @@ function weightedRandom<T>(items: T[], weights: number[]): T {
   return items[0];
 }
 
-async function generatePrompt(): Promise<[string, string, PromptComponents]> {
+async function generatePrompt(
+  userPrompt: string
+): Promise<[string, string, PromptComponents]> {
   const rarity = weightedRandom(rarities, rarityWeights);
 
   const components: PromptComponents = {
@@ -142,7 +144,8 @@ async function generatePrompt(): Promise<[string, string, PromptComponents]> {
   }
 
   const style =
-    "ancient creature warrior style with dramatic lighting, fantasy art style, detailed armor, and mystical aura";
+    userPrompt +
+    "The style of the animal ancient creature warrior style with dramatic lighting, fantasy art style, detailed armor, and mystical aura";
 
   const parts = [
     components.species,
@@ -151,7 +154,7 @@ async function generatePrompt(): Promise<[string, string, PromptComponents]> {
     components.anomalies?.join(", "),
     style,
   ].filter(Boolean) as string[];
-
+  console.log("test", parts.join(" "));
   return [`A ${parts.join(" ")}`, rarity, components];
 }
 
@@ -200,19 +203,20 @@ function generateBattleStats(rarity: string): {
 export async function POST(request: NextRequest) {
   console.log("Generating creatures...");
   try {
+    const req = await request.json();
     // Number of creatures to generate
-    const numCreatures = 1;
+    const numCreatures = 2;
     console.log(`Generating ${numCreatures} creatures`);
 
     // Array to store results
-    const creatures = [];
-
+    const animalImageFile: File[] = [];
+    const imageCidList: string[] = [];
     // Generate multiple creatures
     for (let i = 0; i < numCreatures; i++) {
       console.log(`\n🌟 Generating Creature ${i + 1}/${numCreatures} 🌟`);
 
       // Generate metadata and prompt for each creature
-      const [fullPrompt, rarity, components] = await generatePrompt();
+      const [fullPrompt, rarity, components] = await generatePrompt(req.prompt);
 
       // Generate battle stats early
       const battleStats = generateBattleStats(rarity);
@@ -255,9 +259,6 @@ export async function POST(request: NextRequest) {
       imagePath = `/generated_images/${filename}`;
       console.log(`Image saved to ${imagePath}`);
 
-      // IPFS upload data
-      let ipfsData = null;
-
       try {
         console.log("Preparing for IPFS upload...");
 
@@ -278,10 +279,6 @@ export async function POST(request: NextRequest) {
           // Write the image buffer to a file
           await fs.writeFile(tempFilePath, imageBuffer);
           console.log(`Temporary file created at: ${tempFilePath}`);
-
-          // Use a simple fetch with multipart form-data boundary approach
-          const formData = new FormData();
-
           // Read the file content again to ensure it's properly formatted
           const fileContent = await fs.readFile(tempFilePath);
 
@@ -333,6 +330,7 @@ export async function POST(request: NextRequest) {
           console.log(
             `Image uploaded successfully to IPFS with CID: ${imageCid}`
           );
+          imageCidList.push(imageCid);
 
           // Generate battle stats
           const battleStats = generateBattleStats(rarity);
@@ -365,48 +363,16 @@ export async function POST(request: NextRequest) {
 
           // Upload metadata to IPFS
           console.log("Uploading metadata to IPFS...");
+          const metadataString = JSON.stringify(metadataContent);
 
-          const metadataUploadResponse = await fetch(
-            "https://api.pinata.cloud/pinning/pinJSONToIPFS",
-            {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-                Authorization: `Bearer ${jwt}`,
-              },
-              body: JSON.stringify(metadataContent),
-            }
-          );
+          // Create a file from metadata
+          const metadataFileName = `metadata_${timestamp}_${i}.json`;
+          const metadataFile = new File([metadataString], metadataFileName, {
+            type: "application/json",
+            lastModified: Date.now(),
+          });
 
-          if (!metadataUploadResponse.ok) {
-            const errorText = await metadataUploadResponse.text();
-            console.error(
-              `Metadata upload failed with status ${metadataUploadResponse.status}: ${errorText}`
-            );
-            throw new Error(
-              `Metadata upload failed: ${metadataUploadResponse.status}`
-            );
-          }
-
-          const metadataResult = await metadataUploadResponse.json();
-          const metadataCid = metadataResult.IpfsHash;
-
-          console.log(
-            `Metadata uploaded successfully to IPFS with CID: ${metadataCid}`
-          );
-
-          // Generate gateway URLs
-          const gatewayUrl =
-            process.env.NEXT_PUBLIC_GATEWAY_URL || "gateway.pinata.cloud";
-
-          ipfsData = {
-            image: `ipfs://${imageCid}`,
-            imageUrl: `https://${gatewayUrl}/ipfs/${imageCid}`,
-            metadata: `ipfs://${metadataCid}`,
-            metadataUrl: `https://${gatewayUrl}/ipfs/${metadataCid}`,
-          };
-
-          console.log("IPFS Upload Successful:", ipfsData);
+          animalImageFile.push(metadataFile);
         } catch (fileError) {
           console.error("Error with file operations:", fileError);
           throw new Error("Failed to process image file for upload");
@@ -429,33 +395,32 @@ export async function POST(request: NextRequest) {
         // We'll continue with the generated image even if IPFS upload fails
       }
 
-      // Add creature to results with battle stats
-      creatures.push({
-        imagePath,
-        metadata: {
-          rarity,
-          species: components.species,
-          element: components.element,
-          form: components.form,
-          anomalies: components.anomalies,
-          health: battleStats.health,
-          minAttack: battleStats.minAttack,
-          maxAttack: battleStats.maxAttack,
-          prompt: fullPrompt,
-        },
-        ipfs: ipfsData,
-      });
-
       // Add a small delay between generations to avoid rate limiting
       if (i < numCreatures - 1) {
         await new Promise((resolve) => setTimeout(resolve, 1000));
       }
     }
 
+    // Upload JSON file using your pinata SDK method
+    const metadataUpload = await pinata.upload.fileArray([
+      animalImageFile[0],
+      animalImageFile[1],
+    ]);
+
+    // Generate IPFS and gateway URLs
+    const metadataCid = metadataUpload.IpfsHash;
+    const metadataUrl = `https://ipfs.io/ipfs/${metadataCid}`;
+    console.log(
+      `Metadata uploaded successfully to IPFS with CID: ${metadataUrl}`
+    );
     // Return success response with all creatures
     return NextResponse.json({
       success: true,
-      creatures,
+      data: {
+        metadataUrl,
+        metadataCid,
+        imageCidList,
+      },
     });
   } catch (error) {
     console.error("Error:", error);

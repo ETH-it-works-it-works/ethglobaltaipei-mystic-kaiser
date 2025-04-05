@@ -20,7 +20,7 @@ import { useThirdWeb } from "@/hooks/useThirdWeb";
 import ThirdWebConnectButton from "@/components/ThirdWebConnectButton";
 import Link from "next/link";
 import { useState } from "react";
-import { generateCardAttributes } from "@/lib/rarityUtils";
+import Image from "next/image";
 
 const MAX_FILE_SIZE = 1000000;
 const ACCEPTED_IMAGE_TYPES: Accept = {
@@ -52,6 +52,7 @@ export default function EventCreationPage() {
         }
       ),
     baseUri: z.string(),
+    prompt: z.string().nonempty("Prompt cannot be empty"),
     images: z
       .array(
         z.object({
@@ -61,10 +62,11 @@ export default function EventCreationPage() {
       .nonempty("At least one image is required"),
   });
 
+  const [metadataCid, setMetadataCid] = useState<string>("");
+  const [imageCidList, setImageCidList] = useState<string[]>([]);
+
   const { account } = useThirdWeb();
   const [imagesPreview, setImagesPreview] = useState<string[]>([]); // Preview array
-  const [imagesFiles, setImagesFiles] = useState<File[]>([]); // File array
-  const [ipfsImageUris, setIpfsImageUris] = useState<string[]>([]); // Store CIDs of images
 
   const form = useForm<z.infer<typeof FormSchema>>({
     resolver: zodResolver(FormSchema),
@@ -74,83 +76,55 @@ export default function EventCreationPage() {
       location: "",
       participantLimit: 0,
       startDate: new Date().toISOString().split("T")[0], // Format to "YYYY-MM-DD"
+      prompt: "",
       baseUri: "",
     },
   });
 
-  const onDrop = (acceptedFiles: File[]) => {
-    const currentImages = form.getValues("images") || [];
-    const newImages = acceptedFiles.map((file) => ({ file }));
-    form.setValue("images", [...currentImages, ...newImages], {
-      shouldValidate: true,
-    });
+  // Add this state near other state declarations
+  const [isGenerating, setIsGenerating] = useState(false);
 
-    // Generate previews
-    const previewUrls = acceptedFiles.map((file) => URL.createObjectURL(file));
-    setImagesPreview((prev) => [...prev, ...previewUrls]);
+  // Update the promptImage function
+  const promptImage = async (prompt: string) => {
+    try {
+      setIsGenerating(true);
+      const generateImage = await fetch("/api/generate-creature", {
+        method: "POST",
+        body: JSON.stringify({
+          prompt: prompt,
+        }),
+      });
+      const generateImageJson = await generateImage.json();
+
+      if (!generateImageJson.success) {
+        throw new Error(
+          generateImageJson.error || "Failed to generate creature"
+        );
+      }
+
+      setMetadataCid(generateImageJson.metadataCid);
+      setImageCidList(generateImageJson.imageCidList);
+    } catch (error) {
+      toast.error("Failed to generate image");
+    } finally {
+      setIsGenerating(false);
+    }
   };
 
-  const { getRootProps, getInputProps } = useDropzone({
-    accept: ACCEPTED_IMAGE_TYPES,
-    maxSize: MAX_FILE_SIZE,
-    multiple: true,
-    onDrop,
-  });
-
+  // Update the button in the form
+  <Button
+    type="button"
+    onClick={() => promptImage(form.getValues("prompt"))}
+    disabled={isGenerating}
+  >
+    {isGenerating ? "Generating..." : "Prompt Your Image"}
+  </Button>;
   const onSubmit = async (data: z.infer<typeof FormSchema>) => {
     try {
       toast("Uploading images to IPFS...");
 
-      // Upload images to Pinata
-      const imageUris: string[] = [];
+      const baseUri = `ipfs://${metadataCid}`;
 
-      for (const imageObj of data.images) {
-        const formData = new FormData();
-        formData.append("files", imageObj.file);
-
-        const response = await fetch("/api/pinata/upload", {
-          method: "POST",
-          body: formData,
-        });
-        const res = await response.json();
-        toast(`Uploaded ${res.Name}`);
-        imageUris.push(res.IpfsHash);
-      }
-      // Generate metadata for each image
-      const metadataList = imageUris.map((uri, index) => {
-        const { rarity, health, minAttack, maxAttack } =
-          generateCardAttributes();
-        return {
-          name: `${data.name} - Image ${index + 1}`,
-          description: `Card Created for Event ${data.name}`,
-          image: `ipfs://${uri}`,
-          attributes: [
-            { trait_type: "Rarity", value: rarity },
-            { trait_type: "Health", value: health },
-            { trait_type: "Minimum Attack", value: minAttack },
-            { trait_type: "Maximum Attack", value: maxAttack },
-          ],
-        };
-      });
-      // Generate metadata json files
-      const metadataFormData = new FormData();
-      metadataList.forEach((metadata, index) => {
-        const metadataJson = new Blob([JSON.stringify(metadata)], {
-          type: "application/json",
-        });
-
-        metadataFormData.append(`files`, metadataJson, `${index}.json`); // Assign unique names
-      });
-
-      // Upload metadata files to Pinata
-      const metadataUploadResponse = await fetch("/api/pinata/upload", {
-        method: "POST",
-        body: metadataFormData,
-      });
-      const metadataRes = await metadataUploadResponse.json();
-      const baseUri = `ipfs://${metadataRes.IpfsHash}/`;
-
-      // Automatically update the baseUri field
       form.setValue("baseUri", baseUri);
 
       // Prepare parameters for event creation through contract
@@ -166,7 +140,7 @@ export default function EventCreationPage() {
           location: data.location,
           participantLimit: data.participantLimit,
           startDate: startDateTimestamp,
-          rewardCount: metadataList.length,
+          rewardCount: 2,
           baseUri,
         }),
       });
@@ -288,53 +262,43 @@ export default function EventCreationPage() {
                   </FormItem>
                 )}
               />
-              <FormField
-                control={form.control}
-                name="baseUri"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Event Reward's Base URI</FormLabel>
-                    <FormControl>
-                      <Input disabled placeholder="Base URI" {...field} />
-                    </FormControl>
-                    <FormDescription>
-                      Base URI link for the Event's Rewards
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              {/* Multiple File Upload */}
-              <FormField
-                control={form.control}
-                name="images"
-                render={({ field: { value, onChange, ...fieldProps } }) => (
-                  <FormItem>
-                    <FormLabel>Upload Event Images</FormLabel>
-                    <FormControl>
-                      {/* Dropzone UI */}
-                      <div
-                        {...getRootProps()}
-                        className="border-2 border-dashed p-4 text-center cursor-pointer"
-                      >
-                        <Input {...getInputProps()} />
-                        <p>Drag & drop images here, or click to select files</p>
-                      </div>
-                    </FormControl>
-                    <FormMessage />
-                    <div className="grid grid-cols-3 gap-4 mt-4">
-                      {imagesPreview.map((preview, index) => (
-                        <img
-                          key={index}
-                          src={preview}
-                          alt={`Preview ${index + 1}`}
-                          className="h-32 w-auto rounded-lg"
-                        />
-                      ))}
-                    </div>
-                  </FormItem>
-                )}
-              />
+              <div className="flex min-w-full items-center gap-x-4">
+                <FormField
+                  control={form.control}
+                  name="prompt"
+                  render={({ field }) => (
+                    <FormItem className="flex-1">
+                      <FormLabel>Prompt</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Prompt" {...field} />
+                      </FormControl>
+                      <FormDescription>Prompt for the Event</FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <Button
+                  type="button"
+                  onClick={() => promptImage(form.getValues("prompt"))}
+                  disabled={isGenerating}
+                >
+                  {isGenerating ? "Generating..." : "Prompt Your Image"}
+                </Button>
+              </div>
+              {imageCidList && imageCidList.length > 0 && (
+                <div>
+                  <p>Image CIDs:</p>
+                  {imageCidList.map((imagecid) => (
+                    <Image
+                      key={imagecid}
+                      src={`https://ipfs.io/ipfs/${imagecid}`}
+                      width={100}
+                      height={50}
+                      alt={imagecid}
+                    />
+                  ))}
+                </div>
+              )}
               <Button type="submit">Submit</Button>
             </form>
           </Form>
