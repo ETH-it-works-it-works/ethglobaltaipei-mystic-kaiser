@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import ThirdWebConnectButton from "../ThirdWebConnectButton";
+// import ThirdWebConnectButton from "../ThirdWebConnectButton";
 
 export default function Navbar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -21,7 +21,7 @@ export default function Navbar() {
         </Link>
 
         <div className="flex md:order-2 space-x-3 md:space-x-0 rtl:space-x-reverse">
-          <ThirdWebConnectButton />
+          {/* <ThirdWebConnectButton /> */}
           <button
             onClick={() => setIsMenuOpen(!isMenuOpen)}
             type="button"

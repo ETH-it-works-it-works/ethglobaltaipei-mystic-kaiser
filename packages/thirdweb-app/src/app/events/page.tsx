@@ -10,14 +10,14 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import ThirdWebConnectButton from "@/components/ThirdWebConnectButton";
-import useMultiBaasWithThirdweb from "@/hooks/useMultiBaas";
+// import ThirdWebConnectButton from "@/components/ThirdWebConnectButton";
+// import useMultiBaasWithThirdweb from "@/hooks/useMultiBaas";
 import { Spinner } from "@/components/Spinner";
 import Link from "next/link";
 import { Event, EventField } from "@curvegrid/multibaas-sdk";
 
 export default function EventListingsPage() {
-  const { getOrganisedEvents } = useMultiBaasWithThirdweb();
+  // const { getOrganisedEvents } = useMultiBaasWithThirdweb();
 
   // State for events and pagination
   const eventsPerPage = 10;
@@ -61,7 +61,7 @@ export default function EventListingsPage() {
       <div className="w-full">
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-2xl font-semibold">Event Listings</h1>
-          <ThirdWebConnectButton />
+          {/* <ThirdWebConnectButton /> */}
         </div>
 
         {loading ? (

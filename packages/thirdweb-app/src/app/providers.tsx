@@ -8,7 +8,7 @@ import Navbar from "@/components/custom/navbar";
 export function Providers({ children }: { children: ReactNode }) {
   return (
     <ThirdwebProvider>
-      <Navbar />
+      {/* <Navbar /> */}
       {children}
       <Toaster />
     </ThirdwebProvider>

@@ -30,10 +30,10 @@ export default function Dapp() {
     }
   ] : [
     {
-      id: "story",
-      title: "Story Mode",
-      subtitle: "CHAPTER I: ORIGINS",
-      image: "/dapp/story-bg1.png",
+      id: "event",
+      title: "Event",
+      subtitle: "Find Events",
+      image: "/dapp/event-bg.png",
       color: "bg-amber-700"
     },
     {
