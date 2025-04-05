@@ -8,6 +8,7 @@ const {
 } = process.env;
 
 export const POST = async (request: Request) => {
+  console.log("Request received", request);
   const { eventAddress, address, scannedPerson } = await request.json();
 
   if (
@@ -46,7 +47,7 @@ export const POST = async (request: Request) => {
     ],
   });
   const response = await fetch(
-    `${ENGINE_URL}/contract/${chain.id}/${eventFactoryAddress}/write`,
+    `${ENGINE_URL}/contract/${chain.id}/${eventAddress}/write`,
     {
       method: "POST",
       headers: {

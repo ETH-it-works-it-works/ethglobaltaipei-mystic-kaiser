@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback, useMemo } from "react";
+import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import Link from "next/link";
 import { FaFistRaised } from "react-icons/fa";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -8,6 +8,8 @@ import { RoomService } from "@/services/roomService";
 import { BattleApiService } from "@/services/battleApiService";
 import { createClient } from '@supabase/supabase-js';
 import { Room } from "@/types/battle";
+import { toast } from "sonner";
+import Image from "next/image";
 
 interface PageParams {
   roomCode: string;
@@ -17,6 +19,7 @@ export default function BattleRoomPage({ params }: { params: PageParams }) {
   const { roomCode } = params;
   const router = useRouter();
   const searchParams = useSearchParams();
+  const battleStartedRef = useRef(false);
   const [supabase] = useState(() => createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
@@ -130,8 +133,56 @@ export default function BattleRoomPage({ params }: { params: PageParams }) {
           setGameState('ready');
           setIsCountdownActive(true);
           setCountdown(3);
-        }
 
+          if(currentUserAddress === roomData.player1_address && !battleStartedRef.current) {
+            // Set the ref to true to prevent duplicate calls
+            battleStartedRef.current = true;
+            console.log('Will call start-battle API once...');
+            setTimeout(async () => {
+              try {
+                console.log('Calling start-battle API...');
+                const response = await fetch("/api/start-battle", {
+                  method: "POST",
+                  headers: {
+                    'Content-Type': 'application/json',
+                  },
+                  body: JSON.stringify({
+                    address: roomData.player1_address,
+                    opponent: roomData.player2_address,
+                    player1MinDmg: roomData.player1_atk_min,
+                    player1MaxDmg: roomData.player1_atk_max,
+                    player2MinDmg: roomData.player2_atk_min,
+                    player2MaxDmg: roomData.player2_atk_max,
+                  }),
+                });
+                
+                const res = await response.json();
+                if (res.success) {
+                  console.log('Battle started successfully:', res);
+                  toast("Battle Started", {
+                    description: "Both players have joined. The battle is beginning!",
+                    action: {
+                      label: "Close",
+                      onClick: () => console.log("Closed"),
+                    },
+                  });
+                } else {
+                  console.error('Error starting battle:', res);
+                  toast("Error Starting Battle", {
+                    description: "There was an issue starting the battle. Gameplay will continue normally.",
+                    action: {
+                      label: "Close",
+                      onClick: () => console.log("Closed"),
+                    },
+                  });
+                }
+              } catch (error) {
+                console.error('Error calling start-battle API:', error);
+              }
+            }, 500); // small delay to ensure state is updated
+          }
+        }
+        
         // Set up subscription for all game updates
         const sub = BattleApiService.subscribeToBattle(roomCode, (payload) => {
           console.log('Update received:', payload);
@@ -161,13 +212,6 @@ export default function BattleRoomPage({ params }: { params: PageParams }) {
               
               return updatedRoom;
             });
-            
-            if (newRoom.status === 'ready' && newRoom.player2_address) {
-              console.log('Room is now full, starting countdown');
-              setGameState('ready');
-              setIsCountdownActive(true);
-              setCountdown(3);
-            }
 
             if (newRoom.status === 'completed') {
               setGameState('finished');
@@ -212,18 +256,29 @@ export default function BattleRoomPage({ params }: { params: PageParams }) {
     try {
       // Call the attack API
       const result = await BattleApiService.performAttack(roomCode, currentUserAddress, damage);
-      
+
       console.log('Attack result:', result);
+      
+      // Toast notification for successful attack
+      toast(`You attacked for ${damage} damage!`, {
+        description: `You dealt ${damage} damage to your opponent.`,
+      });
       
       // Update UI immediately based on the attack result
       if (result.gameOver) {
         // Set result based on who won immediately
         setBattleResult('victory');
         setShowResultModal(true);
+        toast("Victory!", {
+          description: "You have defeated your opponent!",
+        });
       }
     } catch (error) {
       console.error('Error making move:', error);
       setError('Failed to make move');
+      toast("Attack Failed", {
+        description: "There was an error processing your attack.",
+      });
     }
   };
 
@@ -280,8 +335,8 @@ export default function BattleRoomPage({ params }: { params: PageParams }) {
   }
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-[url('/dapp/battle/dapp-bg.png')] bg-cover bg-center md:py-10">
-      <div className="flex flex-col justify-between bg-white/90 w-screen h-screen md:w-[540px] md:h-auto rounded-lg px-6 relative py-6">
+    <div className="flex flex-col items-center justify-center min-h-screen bg-[url('/dapp/dapp-bg.png')] bg-cover bg-center md:py-10">
+      <div className="flex flex-col justify-between bg-white/90 w-screen h-screen md:w-[650px] md:h-auto rounded-lg px-6 relative py-6">
         {/* Room Code Display */}
         <div className="absolute top-4 left-1/2 transform -translate-x-1/2 bg-slate-600 px-4 py-2 rounded-lg text-white font-bold">
           Room: {roomCode}
@@ -300,11 +355,12 @@ export default function BattleRoomPage({ params }: { params: PageParams }) {
         )}
 
         {/* Player Names and Health Bars */}
-        <div className="flex justify-between w-full mt-16 mb-8">
+        <div className="flex justify-between items-center w-full mt-16 mb-8">
           {/* My Info */}
           <div className="w-1/2 pr-2">
-            <div className="text-xl font-bold mb-2">
-              You: {myName.substring(0, 6)}...{myName.substring(myName.length - 4)}
+            <div className="flex flex-col text-xl font-bold mb-2">
+              <Image src="/landing-page/common-2.png" alt="Player NFT" width={300} height={300} className="rounded-md border-2 border-yellow-500" />
+              <span>You:</span> <span className="text-gray-500">{myName.substring(0, 6)}...{myName.substring(myName.length - 4)}</span>
             </div>
             <div className="h-4 bg-gray-200 rounded-full overflow-hidden">
               <div 
@@ -317,10 +373,13 @@ export default function BattleRoomPage({ params }: { params: PageParams }) {
             </div>
           </div>
 
+          <span className="text-5xl font-bold text-red-600">VS</span>
+
           {/* Opponent Info */}
           <div className="w-1/2 pl-2">
-            <div className="text-xl font-bold mb-2">
-              Opponent: {opponentName.substring(0, 6)}...{opponentName.substring(opponentName.length - 4)}
+            <div className="flex flex-col text-xl font-bold mb-2">
+              <Image src="/landing-page/common-2.png" alt="Player NFT" width={300} height={300} className="rounded-md border-2 border-yellow-500" />
+              <span>Opponent:</span> <span className="text-gray-500">{opponentName.substring(0, 6)}...{opponentName.substring(opponentName.length - 4)}</span>
             </div>
             <div className="h-4 bg-gray-200 rounded-full overflow-hidden">
               <div 
@@ -336,17 +395,14 @@ export default function BattleRoomPage({ params }: { params: PageParams }) {
 
         {/* Turn Indicator */}
         {gameState === 'playing' && (
-          <div className="text-xl font-bold mb-4 text-center">
+          <div className="text-xl font-bold text-center">
             {isMyTurn ? "Your Turn" : "Opponent's Turn"}
           </div>
         )}
 
         {/* Attack Button */}
         {gameState === 'playing' && isMyTurn && (
-          <div className="my-4 bg-black/40 backdrop-blur-md p-4 rounded-xl border border-white/10">
-            <h3 className="text-center text-lg font-bold mb-2 text-white font-dark-mystic">
-              Your Turn
-            </h3>
+          <div className=" bg-black/40 backdrop-blur-md p-4 rounded-xl border border-white/10">
             <button
               onClick={handleAttackClick}
               className="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-4 px-6 rounded-lg transition-all duration-200 transform hover:scale-105 flex items-center justify-center gap-2"
@@ -366,7 +422,7 @@ export default function BattleRoomPage({ params }: { params: PageParams }) {
           <h3 className="text-lg font-bold mb-2 text-white">Battle Log</h3>
           {battleLog.map((log, index) => (
             <div key={index} className="text-white mb-1">{log}</div>
-          ))}
+          )).reverse()}
         </div>
 
         {/* Result Modal */}

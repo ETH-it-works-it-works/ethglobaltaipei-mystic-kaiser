@@ -1,21 +1,89 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { AiOutlineSwap } from "react-icons/ai";
 import { useThirdWeb } from "@/hooks/useThirdWeb";
 import Navigation from "@/components/landing-page/Navigation";
+import { getSupabaseClient } from "@/lib/supabase";
+import { toast } from "sonner";
+
+// Define interface for event data
+interface EventData {
+  id: number;
+  name: string;
+  description: string;
+  address: string;
+  created_at: string;
+  image_url?: string;
+}
+
+// Define interfaces for the activity items
+interface BaseActivity {
+  id: string;
+  title: string;
+  subtitle: string;
+  image: string;
+  color: string;
+  onClick: () => void;
+}
+
+interface EventActivity extends BaseActivity {
+  isEvent: true;
+  eventData: EventData;
+}
+
+type Activity = BaseActivity | EventActivity;
+
 export default function Dapp() {
   const [selectedTab, setSelectedTab] = useState("home");
   const [isEventCreator, setIsEventCreator] = useState(false);
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const { account } = useThirdWeb();
+  const [events, setEvents] = useState<EventData[]>([]);
+  const [fetchingEvents, setFetchingEvents] = useState(false);
+
+  // Fetch events from Supabase
+  useEffect(() => {
+    const fetchEvents = async () => {
+      try {
+        setFetchingEvents(true);
+        const supabase = getSupabaseClient();
+        
+        const { data, error } = await supabase
+          .from('events')
+          .select('*')
+          .order('created_at', { ascending: false });
+        
+        if (error) {
+          console.error('Error fetching events:', error);
+          toast.error('Failed to load events');
+          return;
+        }
+        
+        setEvents(data || []);
+      } catch (error) {
+        console.error('Error fetching events:', error);
+        toast.error('Failed to load events');
+      } finally {
+        setFetchingEvents(false);
+      }
+    };
+    fetchEvents();
+  }, []);
+
+  // Handle navigation to milestone page with contract address
+  const handleMilestoneClick = (event: EventData) => {
+    if (event.address) {
+      router.push(`/dapp/milestones/${event.address}`);
+    }
+  };
 
   // Mock data for activities
-  const activities = isEventCreator
+  const basicActivities = isEventCreator
     ? [
         {
           id: "event/create",
@@ -23,6 +91,7 @@ export default function Dapp() {
           subtitle: "CREATE NEW EVENT",
           image: "/dapp/story-bg1.png",
           color: "bg-green-700",
+          onClick: () => router.push('/event/create'),
         },
         {
           id: "manage",
@@ -30,6 +99,7 @@ export default function Dapp() {
           subtitle: "MANAGE EXISTING EVENTS",
           image: "/dapp/event-bg.png",
           color: "bg-red-700",
+          onClick: () => router.push('/event/manage'),
         },
       ]
     : [
@@ -39,6 +109,7 @@ export default function Dapp() {
           subtitle: "Find Events",
           image: "/dapp/event-bg.png",
           color: "bg-amber-700",
+          onClick: () => router.push('/event'),
         },
         {
           id: "dapp/battle",
@@ -46,15 +117,24 @@ export default function Dapp() {
           subtitle: "PVP Arena",
           image: "/dapp/battle-bg.png",
           color: "bg-blue-700",
-        },
-        {
-          id: "ongoing",
-          title: "Ongoing Event",
-          subtitle: "Join events",
-          image: "/dapp/quest-bg.png",
-          color: "bg-purple-700",
+          onClick: () => router.push('/dapp/battle'),
         },
       ];
+
+  // Generate event activities from the events fetched from Supabase
+  const eventActivities = events.map((event) => ({
+    id: `event-${event.id}`,
+    title: event.name,
+    subtitle: "View Milestones",
+    image: event.image_url || "/dapp/quest-bg.png",
+    color: "bg-purple-700",
+    onClick: () => handleMilestoneClick(event),
+    isEvent: true,
+    eventData: event,
+  }));
+
+  // Combine basic activities with event activities
+  const activities = [...basicActivities, ...eventActivities] as Activity[];
 
   // Main dapp content
   return (
@@ -69,9 +149,10 @@ export default function Dapp() {
           <Image
             src="/landing-page/white-title.svg"
             alt="Title"
+            onClick={() => router.push('/')}
             width={320}
             height={100}
-            className="object-cover w-full items-center"
+            className="object-cover w-full items-center cursor-pointer"
           />
 
           {/* Character Profile */}
@@ -153,13 +234,19 @@ export default function Dapp() {
 
         {/* Main Content Area */}
         <div className="flex-1 ml-6">
+          {/* Events Title */}
+          <div className="mb-4">
+            <h2 className="text-3xl font-bold">Available Activities</h2>
+            {fetchingEvents && <p className="text-gray-300">Loading events...</p>}
+          </div>
+
           {/* Activities Grid */}
-          <div className="flex flex-col justify-center items-end gap-6 h-[calc(100vh-10rem)]">
+          <div className="grid grid-cols-2 gap-6 overflow-y-auto max-h-[calc(100vh-15rem)]">
             {activities.map((activity) => (
               <div
                 key={activity.id}
-                onClick={() => router.push(`/${activity.id}`)}
-                className={`relative overflow-hidden rounded-xl ${activity.color} group cursor-pointer w-1/2 h-72`}
+                onClick={activity.onClick}
+                className={`relative overflow-hidden rounded-xl ${activity.color} group cursor-pointer h-72`}
               >
                 <Image
                   src={activity.image}
@@ -174,6 +261,13 @@ export default function Dapp() {
                     {activity.title}
                   </h3>
                   <p className="text-gray-300">{activity.subtitle}</p>
+                  
+                  {/* Display event information if this is an event */}
+                  {'isEvent' in activity && (
+                    <div className="mt-2 bg-black/40 backdrop-blur-sm p-2 rounded">
+                      <p className="text-xs text-white">Contract: {(activity as EventActivity).eventData.address.slice(0, 6)}...{(activity as EventActivity).eventData.address.slice(-4)}</p>
+                    </div>
+                  )}
                 </div>
               </div>
             ))}

@@ -34,7 +34,6 @@ interface EventData {
 }
 
 export default function ContractAddressPage() {
-  const router = useRouter();
   const { contractAddress } = useParams();
   const [eventData, setEventData] = useState<EventData>();
   const [canStartEvent, setCanStartEvent] = useState<boolean>(false);
@@ -44,8 +43,7 @@ export default function ContractAddressPage() {
   const { account } = useThirdWeb();
   const [dialogOpen, setDialogOpen] = useState(false);
 
-  const handleScanSuccess = () => {
-
+  const handleScanSuccess = async () => {
     setScanCount((prev) => prev + 1);
     setDialogOpen(false);
     window.location.reload();
@@ -105,6 +103,12 @@ export default function ContractAddressPage() {
       </div>
     );
   }
+
+  const userInfo = JSON.stringify({
+    eventAddress: contractAddress,
+    address: account?.address as string,
+    scannedPerson: account?.address as string,
+  });
 
   const onStartEvent = async () => {
     try {
@@ -237,7 +241,7 @@ export default function ContractAddressPage() {
           {account?.address ? (
             <>
               <div className="bg-white p-4 rounded-lg shadow-lg">
-                <QRCode value={account?.address} size={256} />
+                <QRCode value={userInfo} size={256} />
               </div>
 
               <div className="text-center">
