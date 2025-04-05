@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { InferenceClient } from "@huggingface/inference";
 import fs from 'fs/promises';
 import path from 'path';
+import { pinata } from '../../../../utils/config';
+import FormData from 'form-data';
 
 // Metadata definitions
 const species = [
@@ -139,7 +141,56 @@ export async function POST(request: NextRequest) {
     
     await fs.writeFile(outputPath, buffer);
     
-    // Return success response
+    // Check if USE_SAMPLE_IMAGES is set to true
+    const useSampleImages = process.env.USE_SAMPLE_IMAGES === 'true';
+    
+    // IPFS upload data
+    let ipfsData = null;
+    
+    // Only upload to IPFS if we're not using sample images
+    if (!useSampleImages) {
+      try {
+        console.log("Uploading image to IPFS...");
+        
+        // Upload file to IPFS from saved path
+        const url = `file://${outputPath}`;
+        const imageResult = await pinata.upload.public.url(url);
+        
+        // Create metadata
+        const metadataContent = {
+          name: `${rarity} ${components.species}`,
+          description: `A ${rarity.toLowerCase()} ${components.species.toLowerCase()} fantasy creature`,
+          image: `ipfs://${imageResult.cid}`,
+          attributes: [
+            { trait_type: "Rarity", value: rarity },
+            { trait_type: "Species", value: components.species },
+            ...(components.element ? [{ trait_type: "Element", value: components.element }] : []),
+            ...(components.form ? [{ trait_type: "Form", value: components.form }] : []),
+            ...(components.anomalies ? components.anomalies.map(anomaly => ({ trait_type: "Anomaly", value: anomaly })) : [])
+          ]
+        };
+        
+        // Upload the metadata to IPFS
+        const metadataResult = await pinata.upload.public.json(metadataContent);
+        
+        // Create IPFS data object to return
+        ipfsData = {
+          image: `ipfs://${imageResult.cid}`,
+          imageUrl: `https://${process.env.NEXT_PUBLIC_GATEWAY_URL}/ipfs/${imageResult.cid}`,
+          metadata: `ipfs://${metadataResult.cid}`,
+          metadataUrl: `https://${process.env.NEXT_PUBLIC_GATEWAY_URL}/ipfs/${metadataResult.cid}`
+        };
+        
+        console.log("IPFS Upload Successful!");
+        console.log("Image CID:", imageResult.cid);
+        console.log("Metadata CID:", metadataResult.cid);
+      } catch (ipfsError) {
+        console.error("IPFS upload failed:", ipfsError);
+        // We'll continue even if IPFS upload fails
+      }
+    }
+    
+    // Return success response with IPFS data if available
     return NextResponse.json({ 
       success: true, 
       imagePath: `/generated_images/${filename}`,
@@ -150,7 +201,8 @@ export async function POST(request: NextRequest) {
         form: components.form,
         anomalies: components.anomalies,
         prompt: fullPrompt
-      }
+      },
+      ipfs: ipfsData
     });
     
   } catch (error) {
