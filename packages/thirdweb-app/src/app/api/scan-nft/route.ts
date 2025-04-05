@@ -46,7 +46,7 @@ export const POST = async (request: Request) => {
     ],
   });
   const response = await fetch(
-    `${ENGINE_URL}/contract/${chain.id}/${eventFactoryAddress}/write`,
+    `${ENGINE_URL}/contract/${chain.id}/${eventAddress}/write`,
     {
       method: "POST",
       headers: {

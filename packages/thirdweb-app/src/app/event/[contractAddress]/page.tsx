@@ -34,7 +34,6 @@ interface EventData {
 }
 
 export default function ContractAddressPage() {
-  const router = useRouter();
   const { contractAddress } = useParams();
   const [eventData, setEventData] = useState<EventData>();
   const [canStartEvent, setCanStartEvent] = useState<boolean>(false);
@@ -44,8 +43,7 @@ export default function ContractAddressPage() {
   const { account } = useThirdWeb();
   const [dialogOpen, setDialogOpen] = useState(false);
 
-  const handleScanSuccess = () => {
-
+  const handleScanSuccess = async () => {
     setScanCount((prev) => prev + 1);
     setDialogOpen(false);
     window.location.reload();
