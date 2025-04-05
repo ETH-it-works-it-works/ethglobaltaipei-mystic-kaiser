@@ -390,7 +390,7 @@ const useMultiBaasWithThirdweb = (): MultiBaasHook => {
         console.error("Error getting active beast listings:", err);
         return null;
       }
-    }, [callContractFunction, matchAddressLabel, matchContractLabel]);
+    }, [callContractFunction]);
 
   const getActiveListing =
     useCallback(async (): Promise<Array<Event> | null> => {
