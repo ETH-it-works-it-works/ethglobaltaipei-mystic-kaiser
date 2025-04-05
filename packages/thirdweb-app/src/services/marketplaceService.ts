@@ -467,7 +467,9 @@ export const marketplaceService = {
       console.log("Function call result:\n", activeListingId.output);
 
       const response2 = await eventQueriesApi.executeArbitraryEventQuery(
-        requestBody
+        requestBody,
+        0,
+        50
       );
       const activeListing: any = response2.data.result;
       console.log("Event query result:\n", activeListing.rows);
