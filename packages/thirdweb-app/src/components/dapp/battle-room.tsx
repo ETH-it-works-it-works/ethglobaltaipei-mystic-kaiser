@@ -80,7 +80,7 @@ export default function BattleRoom({ playerAddress, onRoomSelect }: BattleRoomPr
   };
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-[url('/dapp/battle/dapp-bg.png')] bg-cover bg-center">
+    <div className="flex flex-col items-center justify-center min-h-screen bg-[url('/dapp/dapp-bg.png')] bg-cover bg-center">
       <div className="bg-black/60 backdrop-blur-md p-8 rounded-xl text-white text-center w-full max-w-md">
         <h2 className="text-3xl font-bold font-dark-mystic mb-6">
           Battle Room

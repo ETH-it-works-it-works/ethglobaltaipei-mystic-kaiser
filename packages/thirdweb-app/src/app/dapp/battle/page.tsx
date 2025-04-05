@@ -116,7 +116,7 @@ export default function BattleFieldPage() {
   // If wallet not connected, show error message
   if (!account) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen bg-[url('/dapp/battle/dapp-bg.png')] bg-cover bg-center">
+      <div className="flex flex-col items-center justify-center min-h-screen bg-[url('/dapp/dapp-bg.png')] bg-cover bg-center">
         <div className="bg-black/60 backdrop-blur-md p-8 rounded-xl text-white text-center">
           <h2 className="text-2xl font-bold mb-4 font-dark-mystic">Connect Your Wallet</h2>
           <p className="text-gray-300 mb-4">You need to connect your wallet to access battles.</p>
@@ -137,7 +137,7 @@ export default function BattleFieldPage() {
 
   if (gameState === 'waiting') {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen bg-[url('/dapp/battle/dapp-bg.png')] bg-cover bg-center">
+      <div className="flex flex-col items-center justify-center min-h-screen bg-[url('/dapp/dapp-bg.png')] bg-cover bg-center">
         <div className="bg-black/60 backdrop-blur-md p-8 rounded-xl text-white text-center">
           <div className="animate-spin mb-4 mx-auto w-12 h-12 border-4 border-white border-t-transparent rounded-full"></div>
           <h2 className="text-2xl font-bold font-dark-mystic">
@@ -151,7 +151,7 @@ export default function BattleFieldPage() {
 
   if (!player?.currentBeast || !opponent?.currentBeast) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen bg-[url('/dapp/battle/dapp-bg.png')] bg-cover bg-center">
+      <div className="flex flex-col items-center justify-center min-h-screen bg-[url('/dapp/dapp-bg.png')] bg-cover bg-center">
         <div className="bg-black/60 backdrop-blur-md p-8 rounded-xl text-white text-center">
           <div className="animate-spin mb-4 mx-auto w-12 h-12 border-4 border-white border-t-transparent rounded-full"></div>
           <h2 className="text-2xl font-bold font-dark-mystic">
@@ -163,7 +163,7 @@ export default function BattleFieldPage() {
   }
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-[url('/dapp/battle/dapp-bg.png')] bg-cover bg-center md:py-10">
+    <div className="flex flex-col items-center justify-center min-h-screen bg-[url('/dapp/dapp-bg.png')] bg-cover bg-center md:py-10">
       <div className="flex flex-col justify-between bg-white/90 w-screen h-screen md:w-[540px] md:h-auto rounded-lg px-6 relative">
         {/* Room Code Display */}
         <div className="absolute top-4 left-1/2 transform -translate-x-1/2 bg-slate-600 px-4 py-2 rounded-lg text-white font-bold">
