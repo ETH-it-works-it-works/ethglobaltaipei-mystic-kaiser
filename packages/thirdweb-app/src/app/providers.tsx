@@ -10,7 +10,7 @@ export function Providers({ children }: { children: ReactNode }) {
   return (
     <ThirdwebProvider>
       <NFTProvider>
-        <Navbar />
+        {/* <Navbar /> */}
         {children}
         <Toaster />
       </NFTProvider>
