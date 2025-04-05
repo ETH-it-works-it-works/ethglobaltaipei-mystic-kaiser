@@ -680,7 +680,13 @@
     "type": "function"
   },
   {
-    "inputs": [],
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "scannedPerson",
+        "type": "address"
+      }
+    ],
     "name": "recordScan",
     "outputs": [],
     "stateMutability": "nonpayable",

@@ -21,7 +21,6 @@ import {
   managerAddress,
   organiserAddress,
   sponsorGas,
-  eventImplementationAddress,
 } from "@/common/constants";
 import { organiserPass } from "@/abis/OrganiserPass";
 import { eventFactory } from "@/abis/EventFactory";
@@ -36,9 +35,6 @@ interface ThirdWebHook {
   chain: ChainOptions;
   account: Account | null;
   managerContract: Readonly<ContractOptions<any, `0x${string}`>> | null;
-  eventImplementationContract: Readonly<
-    ContractOptions<any, `0x${string}`>
-  > | null;
   organiserContract: Readonly<ContractOptions<any, `0x${string}`>> | null;
   eventFactoryContract: Readonly<ContractOptions<any, `0x${string}`>> | null;
   smartWallet: Readonly<ContractOptions<any, `0x${string}`>> | null;
@@ -66,13 +62,6 @@ export const useThirdWeb = (): ThirdWebHook => {
     });
   }, [managerAddress, chain, client, matchManager]);
 
-  const eventImplementationContract = useMemo(() => {
-    return getContract({
-      address: eventImplementationAddress,
-      chain,
-      client,
-    });
-  }, [eventImplementationAddress, chain, client]);
   const organiserContract = useMemo(() => {
     if (!client) return null;
     return getContract({
@@ -138,7 +127,6 @@ export const useThirdWeb = (): ThirdWebHook => {
     client,
     chain,
     account,
-    eventImplementationContract,
     managerContract,
     organiserContract,
     eventFactoryContract,
