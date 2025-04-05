@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import ThirdWebConnectButton from "../ThirdWebConnectButton";
+import LaunchButton from "../LaunchButton";
 // import { useConnect, useDisconnect, useAddress } from "@thirdweb-dev/react";
 
 export default function Navigation() {
@@ -42,23 +43,7 @@ export default function Navigation() {
           />
         </Link>
         <div className="hidden md:flex flex-row items-center gap-6 text-2xl text-white">
-          <Link href="/dapp" className="flex flex-row items-center gap-2 hover:scale-105 transition-all duration-300">
-            <Image
-              src="/landing-page/launch-left.png"
-              alt="Mystic Kaizer Logo"
-              width={80}
-              height={50}
-            />
-            <div className="py-3 text-3xl">
-              Launch
-            </div>
-            <Image
-              src="/landing-page/launch-right.png"
-              alt="Mystic Kaizer Logo"
-              width={80}
-              height={50}
-            />
-          </Link>
+          <LaunchButton />
         </div>
         {/* Desktop Navigation */}
         <div className="hidden md:flex items-center text-2xl text-white font-inter">
