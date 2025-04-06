@@ -20,7 +20,7 @@ export const POST = async (request: Request) => {
       { status: 500 }
     );
   const body = JSON.stringify({
-    functionName: "function registerParticipant()",
+    functionName: "function mintNFT()",
     args: [],
     txOverrides: {
       gas: "530000",
@@ -32,7 +32,7 @@ export const POST = async (request: Request) => {
     abi: [
       {
         inputs: [],
-        name: "registerParticipant",
+        name: "mintNFT",
         outputs: [],
         stateMutability: "nonpayable",
         type: "function",
@@ -58,7 +58,9 @@ export const POST = async (request: Request) => {
     const data = await response.json();
     return NextResponse.json({
       success: true,
-      data: JSON.stringify(data),
+      data: JSON.stringify(data, (_, value) =>
+        typeof value === "bigint" ? value.toString() : value
+      ),
     });
   } else {
     return NextResponse.json({

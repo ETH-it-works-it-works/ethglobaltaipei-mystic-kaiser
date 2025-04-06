@@ -140,7 +140,7 @@ export default function Marketplace() {
   return (
     <main className="min-h-screen w-screen bg-[url('/dapp/marketplace-bg.png')] bg-cover bg-center flex items-center justify-center">
       <Navbar />
-      <div className="py-10 w-full max-w-screen-lg p-6 flex flex-col">
+      <div className="py-10 w-full max-w-screen-lg p-6 mt-10 flex flex-col">
         <div className="flex justify-between mb-12">
           <h1 className="text-4xl font-extrabold text-white">
             Marketplace

@@ -8,6 +8,7 @@ import Navigation from "@/components/landing-page/Navigation";
 import { useParams } from "next/navigation";
 import useMultiBaas from "@/hooks/useMultiBaas";
 import { toast } from "sonner";
+import VerificationModal from "@/components/verificationModal";
 
 export default function MilestonesPage() {
   const { contractAddress } = useParams();
@@ -17,7 +18,10 @@ export default function MilestonesPage() {
   const [activeTab, setActiveTab] = useState("milestones");
   const [milestoneData, setMilestoneData] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-
+  const [mintingMilestoneId, setMintingMilestoneId] = useState<number | null>(null);
+  const [mintedMilestones, setMintedMilestones] = useState<{[key: number]: boolean}>({});
+  const [isVerificationModalOpen, setIsVerificationModalOpen] = useState(false);
+  const [currentMilestoneId, setCurrentMilestoneId] = useState<number | null>(null);
   useEffect(() => {
     if (!contractAddress || !account?.address) {
       setIsLoading(false);
@@ -42,6 +46,7 @@ export default function MilestonesPage() {
           // Create milestone objects from the contract data
           const milestoneObjects = milestones.map((requirement, index) => ({
             id: index + 1,
+            milestoneIndex: index,
             title: `Milestone ${index + 1}`,
             description: `Connect with ${requirement} friend${Number(requirement) !== 1 ? 's' : ''}`,
             requirement: Number(requirement),
@@ -65,6 +70,52 @@ export default function MilestonesPage() {
 
     fetchData();
   }, [contractAddress, account?.address, getMilestoneData, getScanCount]);
+
+  const handleMintNFT = async (milestoneId: number) => {
+    setMintingMilestoneId(milestoneId);
+    setIsVerificationModalOpen(true);
+  };
+
+  const handleVerificationSuccess = async () => {
+    if (currentMilestoneId === null) return;
+    
+    // Now proceed with minting after successful verification
+    setMintingMilestoneId(currentMilestoneId);
+    try {
+      // Mint NFT logic here
+      const response = await fetch('/api/mint-nft', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          eventAddress: contractAddress, 
+          address: account?.address
+        })
+      });
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        toast.success('NFT minted successfully!');
+        
+        // Update the minted milestones state
+        setMintedMilestones(prev => ({
+          ...prev,
+          [currentMilestoneId]: true
+        }));
+      } else {
+        throw new Error('Failed to mint NFT');
+      }
+    } catch (error) {
+      console.error('Mint NFT error:', error);
+      toast.error('Failed to mint NFT');
+      throw error; // Re-throw to be caught by the verification modal
+    } finally {
+      setMintingMilestoneId(null);
+      setCurrentMilestoneId(null);
+    }
+  };
 
   return (
     <div className="min-h-screen w-full bg-[url('/dapp/dapp-bg.png')] bg-cover bg-center text-white">
@@ -189,6 +240,34 @@ export default function MilestonesPage() {
                             style={{ width: `${Math.min(100, (scanCount/milestone.requirement) * 100)}%` }}
                           ></div>
                         </div>
+                        
+                        {/* Mint button for completed milestones that haven't been minted */}
+                        {milestone.completed && !mintedMilestones[milestone.id] && (
+                          <button 
+                            className="mt-3 w-full bg-gradient-to-r from-yellow-500 to-yellow-600 text-black font-bold py-2 rounded-lg hover:from-yellow-400 hover:to-yellow-500 transition-all"
+                            disabled={mintingMilestoneId === milestone.id}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleMintNFT(milestone.id);
+                            }}
+                          >
+                            {mintingMilestoneId === milestone.id ? (
+                              <div className="flex justify-center items-center">
+                                <div className="animate-spin w-4 h-4 border-2 border-black border-t-transparent rounded-full mr-2"></div>
+                                Minting...
+                              </div>
+                            ) : (
+                              'Mint NFT Reward'
+                            )}
+                          </button>
+                        )}
+                        
+                        {/* Already minted indicator */}
+                        {mintedMilestones[milestone.id] && (
+                          <div className="mt-3 w-full bg-green-700/50 text-center text-white font-medium py-2 rounded-lg">
+                            NFT Claimed ✓
+                          </div>
+                        )}
                       </div>
                     </motion.div>
                   ))}
@@ -201,6 +280,12 @@ export default function MilestonesPage() {
             </div>
           </div>
         )}
+        <VerificationModal
+  isOpen={isVerificationModalOpen}
+  onOpenChange={setIsVerificationModalOpen}
+  onVerificationSuccess={handleVerificationSuccess}
+  onVerificationError={(error) => toast.error(error)}
+/>
       </div>
     </div>
   );

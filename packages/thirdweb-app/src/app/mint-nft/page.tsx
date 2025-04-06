@@ -4,6 +4,13 @@ import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import SelfQRcodeWrapper, { SelfAppBuilder } from '@selfxyz/qrcode';
 import { v4 as uuidv4 } from 'uuid';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 
 interface VerifiedUser {
   name: string;
@@ -85,37 +92,31 @@ export default function TestingPage() {
           </div>
         )}
 
-        {/* Add QR Code Button */}
-        <div className="flex justify-center mb-8">
-          <Button 
-            onClick={() => {
-              setShowQR(true);
-              setErrorMessage(null);
-            }}
-            className="bg-blue-600 text-white hover:bg-blue-700"
-          >
-            {showQR ? "Hide QR Code" : "Show QR Code"}
-          </Button>
-        </div>
-
-        {/* QR Code Modal */}
-        {showQR && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white p-6 rounded-lg">
-              <SelfQRcodeWrapper
-                selfApp={selfApp}
-                onSuccess={handleVerificationSuccess}
-                size={350}
-              />
+        {/* QR Code Dialog */}
+        <div className="flex justify-center">
+          <Dialog open={showQR} onOpenChange={setShowQR}>
+            <DialogTrigger asChild>
               <Button 
-                onClick={() => setShowQR(false)}
-                className="mt-4 w-full bg-gray-500 text-white hover:bg-gray-600"
+                onClick={() => setErrorMessage(null)}
+                className="bg-blue-600 text-white hover:bg-blue-700"
               >
-                Close QR Code
+                Verify with Self
               </Button>
-            </div>
-          </div>
-        )}
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-md flex flex-col items-center">
+              <DialogHeader>
+                <DialogTitle className="text-center">Scan QR Code to Verify</DialogTitle>
+              </DialogHeader>
+              <div className="flex justify-center py-4">
+                <SelfQRcodeWrapper
+                  selfApp={selfApp}
+                  onSuccess={handleVerificationSuccess}
+                  size={350}
+                />
+              </div>
+            </DialogContent>
+          </Dialog>
+        </div>
       </div>
     </main>
   );

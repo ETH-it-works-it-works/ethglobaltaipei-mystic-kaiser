@@ -122,9 +122,7 @@ export default function ContractAddressPage() {
       const res = await response.json();
       if (res.success) {
         toast("Event Started", {
-          description: JSON.stringify(res, (key, value) =>
-            typeof value === "bigint" ? value.toString() : value
-          ),
+          description: "Event has been started successfully",
           action: {
             label: "Close",
             onClick: () => console.log("Closed"),
@@ -155,11 +153,7 @@ export default function ContractAddressPage() {
       const res = await response.json();
       if (res.success) {
         toast("Registration Successful", {
-          description: JSON.parse(
-            JSON.stringify(res, (key, value) =>
-              typeof value === "bigint" ? value.toString() : value
-            )
-          ),
+          description: "You have successfully registered for this event",
           action: {
             label: "Close",
             onClick: () => console.log("Closed"),
