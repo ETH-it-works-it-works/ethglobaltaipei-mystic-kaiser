@@ -1,5 +1,4 @@
 <!-- TITLE -->
-
 <p align="center">
   <img width="100px" src="https://github.com/celo-org/celo-composer/blob/main/images/readme/celo_isotype.svg" align="center" alt="Celo" />
  <h2 align="center">Mystic Kaizer</h2>
@@ -15,7 +14,6 @@ Deployed contracts:
 - [OrganizerToken](https://alfajores.celoscan.io/address/0x8a608cc6b060B865EF35183d0e39C24c5Fc4a731/contracts) - 0x8a608cc6b060B865EF35183d0e39C24c5Fc4a731
 <!-- TABLE OF CONTENTS -->
 
-
 <div>
   <summary>Table of Contents</summary>
   <ol>
@@ -24,6 +22,8 @@ Deployed contracts:
         <li><a href="#built-with">Built With</a></li>
         <li><a href="#prerequisites">Prerequisites</a></li>
      </ol>
+     <li><a href="#ai-generated-game-cards">AI-Generated Game Cards</a></li>
+     <li><a href="#self-protocol-implementation">Self Protocol Implementation</a></li>
      <li><a href="#how-multibaas-is-used">How Multibaas Is Used</a>
         <ol>
           <li><a href="#contract-read-operations">Contract Read Operations</a></li>
@@ -50,17 +50,23 @@ Deployed contracts:
 
 ## About The Project
 
-One Liner for our project
+Mystic Kaizer is a decentralized event management platform with an integrated Battle Cards gameplay system. The platform enables:
 
-To prevent individuals from minting multiple accounts, we can integrate Self's zero-knowledge (zk) off-chain verification technology, which allows users to prove their identity without revealing personal information. This ensures that each user can only mint once, enhancing the integrity of the minting process.
+- **Event Creation & Management**: Organizations can create, manage, and host events on the blockchain.
+- **Participant Engagement**: Attendees can register for events, receive NFT-based battle cards, and participate in matches.
+- **Battle Card System**: Unique AI-generated game cards with different rarities and attributes that players can collect, battle with, and trade.
+- **Rewards & Incentives**: Event organizers can define milestone-based rewards to encourage participation and engagement.
+- **Decentralized Marketplace**: A platform for users to buy, sell, and trade their battle cards after events.
+
+The system utilizes blockchain technology to ensure transparency, ownership verification, and secure reward distribution while providing an engaging gaming experience to drive event participation.
+
+For a comprehensive overview of the project, check out our [Pitch Deck](https://www.canva.com/design/DAGjw8QYSiA/AZif332cuLPmHxN8MdKZqg/edit?utm_content=DAGjw8QYSiA&utm_campaign=designshare&utm_medium=link2&utm_source=sharebutton).
 
 <p align="right">(<a href="#top">back to top</a>)</p>
-
 ## Built With
 
 - [Celo](https://celo.org/)
 - [Multibaas](https://docs.curvegrid.com/multibaas)
-- [Self](https://self.xyz/)
 - [Solidity](https://docs.soliditylang.org/en/v0.8.19/)
 - [Hardhat](https://hardhat.org/)
 - [Thirdweb](https://portal.thirdweb.com/)
@@ -76,6 +82,38 @@ To prevent individuals from minting multiple accounts, we can integrate Self's z
 
 - Node (v20 or higher)
 - Git (v2.38 or higher)
+
+## AI-Generated Game Cards
+
+Our Battle Cards system is powered by AI-generated imagery to create unique and visually appealing game cards:
+
+### Generation Process
+
+1. **AI Image Generation**: We leverage Hugging Face's inference API to generate custom card artwork based on character attributes and themes.
+2. **Randomized Rarity Distribution**: Each card's rarity (Common, Uncommon, Rare, Epic, Legendary) is determined through a weighted randomization algorithm.
+3. **IPFS Storage**: Generated card images are stored on IPFS through Pinata, ensuring decentralized and persistent availability.
+4. **Metadata Creation**: Card metadata (including rarity, stats, abilities, and IPFS image links) is created and formatted for on-chain representation.
+5. **Blockchain Integration**: Final metadata is passed to Hardhat for NFT minting, making each card a tradable asset on the Celo blockchain.
+
+This system allows players to collect, battle with, and trade truly unique cards with provable rarity and ownership.
+
+<p align="right">(<a href="#top">back to top</a>)</p>
+
+## Self Protocol Implementation
+
+Our platform integrates Self Protocol to create a secure and privacy-preserving authentication and identity verification system for event participants.
+
+### Implementation Process
+
+1. **Identity Verification**: We use Self Protocol's verification service to confirm user identities without storing sensitive personal information.
+2. **Wallet Authentication**: Self Protocol enables seamless wallet connections and authentication, enhancing security for our event participants.
+3. **Credential Management**: The protocol allows event organizers to issue verifiable credentials to participants, which can be used for event access and special privileges.
+4. **Privacy Protection**: By leveraging Self Protocol's zero-knowledge proof capabilities, we enable identity verification without exposing users' personal data.
+5. **Reputation System**: Participants build reputation scores through verified attendance and participation, enhancing trust within the ecosystem.
+
+This integration ensures that only legitimate participants can join events and receive battle cards, while maintaining user privacy and data sovereignty.
+
+<p align="right">(<a href="#top">back to top</a>)</p>
 
 ## How Multibaas is Used
 
@@ -185,8 +223,6 @@ In our project, the primary webhook use case is the `EventCreated` event emitted
 4. Calls the `contractsApi` to associate the alias with the implementation ABI
 5. From this point, the new event contract is fully indexed and queryable
 
-[Github Repo for Webhook](https://github.com/SohZHong/mystic-kaizer-express)
-
 #### Example Implementation:
 
 ```typescript
@@ -288,28 +324,26 @@ npx hardhat ignition deploy ignition/modules/EventModule.ts --reset --network al
 
 After deploying both contracts, verify their deployment on the blockchain and make a note of their addresses.
 
-![Deployed and verified contracts](/images/deployed-contracts.png)
-
 #### 2. Add Implementation as an Interface in Multibaas
 
 Now, you'll need to connect the Event Implementation contract to Multibaas by adding it as an interface.
 
-1. In your Multibaas cosole, navigate to the **Library** page under **Contracts** section.
-2. Click on the **"+"** button on the top left, click on **"Link Contract"**.
-3. Then, click on **"Contract from Address"** and input the event implementation contract's address into the field.
-4. Click on **"Search"**, there should be an option to select the contract Multibaas found, select **"Implementation Contract"** and click **"Continue"**.
-5. Input your preferred label and version and click **"Continue"**.
-6. You're done. This step allows Multibaas to recognize the contract's methods and interact with it on-chain.
+1.  In your Multibaas cosole, navigate to the **Library** page under **Contracts** section.
+2.  Click on the **"+"** button on the top left, click on **"Link Contract"**.
+3.  Then, click on **"Contract from Address"** and input the event implementation contract's address into the field.
+4.  Click on **"Search"**, there should be an option to select the contract Multibaas found, select **"Implementation Contract"** and click **"Continue"**.
+5.  Input your preferred label and version and click **"Continue"**.
+6.  You're done. This step allows Multibaas to recognize the contract's methods and interact with it on-chain.
 
 #### 3. Track Events from Event Factory Through Address
 
 Next, you need to track the events emitted by the Event Factory contract. Multibaas will listen for specific events and process them accordingly.
 
-1. In your Multibaas cosole, navigate to the **On-Chain** page under **Contracts** section.
-2. Click on the **"+"** button on the top left, click on **"Link Contract"**.
-3. Then, click on **"Contract from Address"** and input the event factory contract's address into the field.
-4. Click on **"Search"**, there should be an option to select the contract Multibaas found, click **"Continue"**.
-5. Input your preferred label and version and click **"Continue"**.
+1.  In your Multibaas cosole, navigate to the **On-Chain** page under **Contracts** section.
+2.  Click on the **"+"** button on the top left, click on **"Link Contract"**.
+3.  Then, click on **"Contract from Address"** and input the event factory contract's address into the field.
+4.  Click on **"Search"**, there should be an option to select the contract Multibaas found, click **"Continue"**.
+5.  Input your preferred label and version and click **"Continue"**.
 
 This ensures that any new event created by the Event Factory will trigger an event in Multibaas, allowing you to process the information.
 
@@ -372,8 +406,30 @@ app.post("/webhook", async (req: Request, res: Response) => {
           (input: EventField) => input.name === "rewardCount"
         )?.value;
 
+        // Save to Supabase
+        const { data, error } = await supabase.from("events").insert([
+          {
+            event_id: eventId,
+            organizer,
+            address: eventContract,
+            name,
+            description,
+            location,
+            participant_limit: Number(participantLimit),
+            reward_count: Number(rewardCount),
+            start_date: new Date(startDate * 1000).toISOString(),
+          },
+        ]);
+
+        if (error) {
+          console.error("Error inserting into Supabase:", error);
+          throw error;
+        } else {
+          console.log("Successfully saved event:", data);
+        }
+
         // Create an alias for the new address
-        const alias = "YOUR_ALIAS";
+        const alias = `eventimplementation${eventId}`;
         await addressApi.setAddress("ethereum", {
           alias,
           address: eventContract,
@@ -381,7 +437,7 @@ app.post("/webhook", async (req: Request, res: Response) => {
 
         // Link to multibaas
         await contractsApi.linkAddressContract("ethereum", alias, {
-          label: " <YOUR_CONTRACT_LABEL>",
+          label: "eventimplementation1",
           startingBlock: "latest",
         });
       }
@@ -447,7 +503,7 @@ Having a GitHub repo or official examples showing how to integrate MultiBaas SDK
 
 #### Understanding Event Payloads
 
-Had to manually inspected and parse the response from the Events API to extract useful fields (e.g., `eventContract` from EventCreated, `battleId` from Attack, etc.).
+Had to manually inspect and parse the response from the Events API to extract useful fields (e.g., `eventContract` from EventCreated, `battleId` from Attack, etc.).
 
 #### Dynamic Linking of Deployed Contracts
 
@@ -459,7 +515,7 @@ Learned that dynamically linking newly deployed contracts via the SDK requires:
 
 #### Insufficient Documentation on Linking Steps
 
-The documentation did not fully clarified the required order or prerequisites for linking child contracts deployed through factories, which led to confusion until clarification was received from Curvegrid support.
+The documentation did not fully clarify the required order or prerequisites for linking child contracts deployed through factories, which led to confusion until clarification was received from Curvegrid support.
 
 #### Role & Permission Setup
 
@@ -512,6 +568,17 @@ Created a full pipeline: from contract deployment → event detection → webhoo
 #### Enhanced Developer Understanding
 
 The challenges helped deepen understanding of contract aliasing, event decoding, permission modeling, and SDK integration workflows.
+
+## Team
+
+Meet the talented individuals behind Mystic Kaizer:
+
+- **Smart Contract Development**: [@Sean_Hoee](https://x.com/Sean_Hoee)
+- **Smart Contract Development**: [@JunIan64](https://x.com/JunIan64)
+- **UI/UX & Frontend Development**: [@\_Junshen18](https://x.com/_Junshen18)
+- **AI Development**: [@SiewwinL24603](https://x.com/SiewwinL24603)
+
+<p align="right">(<a href="#top">back to top</a>)</p>
 
 ## License
 
