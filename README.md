@@ -78,7 +78,7 @@ MultiBaas serves as the read-layer integration for the project, acting as the in
 
 Main Usages are:
 
-- Contract Read Operations through SDK
+- Contract Read Operations through SDK (REST API)
 - Frontend development with CORS origins
 - Event indexing
 - Webhook
