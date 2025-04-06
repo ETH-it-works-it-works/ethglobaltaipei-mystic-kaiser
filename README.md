@@ -6,6 +6,12 @@
 </p>
 </p>
 
+Deployed contracts:
+
+- [EventFactory](https://alfajores.celoscan.io/address/0xBe9EC98fF0F20c37a8c173F1Bd7D7a9EEF8bbC1D/contracts) - 0xBe9EC98fF0F20c37a8c173F1Bd7D7a9EEF8bbC1D
+- [Marketplace](https://alfajores.celoscan.io/address/0xa52ce5F40f414162B10fA33e8f3230bBA41cAF56/contracts) - 0xa52ce5F40f414162B10fA33e8f3230bBA41cAF56
+- [MatchManager](https://alfajores.celoscan.io/address/0x01d6Fd3d96d715B04932A21868C3b0c97C7aabc2/contracts) - 0x01d6Fd3d96d715B04932A21868C3b0c97C7aabc2
+- [OrganizerToken](https://alfajores.celoscan.io/address/0x8a608cc6b060B865EF35183d0e39C24c5Fc4a731/contracts) - 0x8a608cc6b060B865EF35183d0e39C24c5Fc4a731
 <!-- TABLE OF CONTENTS -->
 
 <div>
