@@ -1,4 +1,5 @@
 <!-- TITLE -->
+
 <p align="center">
   <img width="100px" src="https://github.com/celo-org/celo-composer/blob/main/images/readme/celo_isotype.svg" align="center" alt="Celo" />
  <h2 align="center">Mystic Kaizer</h2>
@@ -13,6 +14,7 @@ Deployed contracts:
 - [MatchManager](https://alfajores.celoscan.io/address/0x01d6Fd3d96d715B04932A21868C3b0c97C7aabc2/contracts) - 0x01d6Fd3d96d715B04932A21868C3b0c97C7aabc2
 - [OrganizerToken](https://alfajores.celoscan.io/address/0x8a608cc6b060B865EF35183d0e39C24c5Fc4a731/contracts) - 0x8a608cc6b060B865EF35183d0e39C24c5Fc4a731
 <!-- TABLE OF CONTENTS -->
+
 
 <div>
   <summary>Table of Contents</summary>
@@ -50,12 +52,15 @@ Deployed contracts:
 
 One Liner for our project
 
+To prevent individuals from minting multiple accounts, we can integrate Self's zero-knowledge (zk) off-chain verification technology, which allows users to prove their identity without revealing personal information. This ensures that each user can only mint once, enhancing the integrity of the minting process.
+
 <p align="right">(<a href="#top">back to top</a>)</p>
 
 ## Built With
 
 - [Celo](https://celo.org/)
 - [Multibaas](https://docs.curvegrid.com/multibaas)
+- [Self](https://self.xyz/)
 - [Solidity](https://docs.soliditylang.org/en/v0.8.19/)
 - [Hardhat](https://hardhat.org/)
 - [Thirdweb](https://portal.thirdweb.com/)
@@ -272,7 +277,7 @@ Ensure that you have the following installed:
 
 The first step in setting up your system is to deploy the event implementation and event factory contracts.
 
-- **Event Implementation**: This contract defines the logic of an event. It contains the business logic and manages the event’s state.
+- **Event Implementation**: This contract defines the logic of an event. It contains the business logic and manages the event's state.
 - **Event Factory**: This contract is used to deploy new events and manage them at a higher level.
 
 You can deploy them by navigating to `packages/hardhat` directory and run this in the CLI:
@@ -287,24 +292,24 @@ After deploying both contracts, verify their deployment on the blockchain and ma
 
 #### 2. Add Implementation as an Interface in Multibaas
 
-Now, you’ll need to connect the Event Implementation contract to Multibaas by adding it as an interface.
+Now, you'll need to connect the Event Implementation contract to Multibaas by adding it as an interface.
 
-1.  In your Multibaas cosole, navigate to the **Library** page under **Contracts** section.
-2.  Click on the **"+"** button on the top left, click on **"Link Contract"**.
-3.  Then, click on **"Contract from Address"** and input the event implementation contract's address into the field.
-4.  Click on **"Search"**, there should be an option to select the contract Multibaas found, select **"Implementation Contract"** and click **"Continue"**.
-5.  Input your preferred label and version and click **"Continue"**.
-6.  You're done. This step allows Multibaas to recognize the contract’s methods and interact with it on-chain.
+1. In your Multibaas cosole, navigate to the **Library** page under **Contracts** section.
+2. Click on the **"+"** button on the top left, click on **"Link Contract"**.
+3. Then, click on **"Contract from Address"** and input the event implementation contract's address into the field.
+4. Click on **"Search"**, there should be an option to select the contract Multibaas found, select **"Implementation Contract"** and click **"Continue"**.
+5. Input your preferred label and version and click **"Continue"**.
+6. You're done. This step allows Multibaas to recognize the contract's methods and interact with it on-chain.
 
 #### 3. Track Events from Event Factory Through Address
 
 Next, you need to track the events emitted by the Event Factory contract. Multibaas will listen for specific events and process them accordingly.
 
-1.  In your Multibaas cosole, navigate to the **On-Chain** page under **Contracts** section.
-2.  Click on the **"+"** button on the top left, click on **"Link Contract"**.
-3.  Then, click on **"Contract from Address"** and input the event factory contract's address into the field.
-4.  Click on **"Search"**, there should be an option to select the contract Multibaas found, click **"Continue"**.
-5.  Input your preferred label and version and click **"Continue"**.
+1. In your Multibaas cosole, navigate to the **On-Chain** page under **Contracts** section.
+2. Click on the **"+"** button on the top left, click on **"Link Contract"**.
+3. Then, click on **"Contract from Address"** and input the event factory contract's address into the field.
+4. Click on **"Search"**, there should be an option to select the contract Multibaas found, click **"Continue"**.
+5. Input your preferred label and version and click **"Continue"**.
 
 This ensures that any new event created by the Event Factory will trigger an event in Multibaas, allowing you to process the information.
 
@@ -438,11 +443,11 @@ Having a GitHub repo or official examples showing how to integrate MultiBaas SDK
 
 #### WebSocket Setup & Debugging
 
-- Initial difficulty setting up the webhook listener, as the structure of the response body wasn’t clearly documented. Required trial-and-error and extensive logging to decode payload structure.
+- Initial difficulty setting up the webhook listener, as the structure of the response body wasn't clearly documented. Required trial-and-error and extensive logging to decode payload structure.
 
 #### Understanding Event Payloads
 
-Had to manually inspect and parse the response from the Events API to extract useful fields (e.g., `eventContract` from EventCreated, `battleId` from Attack, etc.).
+Had to manually inspected and parse the response from the Events API to extract useful fields (e.g., `eventContract` from EventCreated, `battleId` from Attack, etc.).
 
 #### Dynamic Linking of Deployed Contracts
 
@@ -454,7 +459,7 @@ Learned that dynamically linking newly deployed contracts via the SDK requires:
 
 #### Insufficient Documentation on Linking Steps
 
-The documentation did not fully clarify the required order or prerequisites for linking child contracts deployed through factories, which led to confusion until clarification was received from Curvegrid support.
+The documentation did not fully clarified the required order or prerequisites for linking child contracts deployed through factories, which led to confusion until clarification was received from Curvegrid support.
 
 #### Role & Permission Setup
 
@@ -466,7 +471,7 @@ Webhook payloads sometimes arrived before the contract was fully linked and inde
 
 #### Lack of SDK Documentation
 
-While the MultiBaas SDK is powerful, it lacks comprehensive documentation. Specifically, there’s no clear mapping between the SDK functions and the MultiBaas Web UI or API endpoints. This made it difficult to discover the correct methods (e.g., `contractsApi.linkAddressToContract`, `addressApi.createAddressAlias`) without trial and error or support intervention.
+While the MultiBaas SDK is powerful, it lacks comprehensive documentation. Specifically, there's no clear mapping between the SDK functions and the MultiBaas Web UI or API endpoints. This made it difficult to discover the correct methods (e.g., `contractsApi.linkAddressToContract`, `addressApi.createAddressAlias`) without trial and error or support intervention.
 
 #### Inconsistent eventType Field in SDK vs Webhook Response
 
@@ -480,7 +485,7 @@ Actual Response Received:
 
 #### Support via Multiple Channels
 
-Had to reach out via both live support chat and in-person at Curvegrid’s booth for some critical clarifications, highlighting gaps in async documentation.
+Had to reach out via both live support chat and in-person at Curvegrid's booth for some critical clarifications, highlighting gaps in async documentation.
 
 ### Wins
 
@@ -502,7 +507,7 @@ Seamlessly connected MultiBaas webhooks to Supabase writes, enabling low-latency
 
 #### Built a Robust Backend Flow
 
-Created a full pipeline: from contract deployment → event detection → webhook delivery → backend processing → data persistence. This is done all using MultiBaas’s interface and SDK.
+Created a full pipeline: from contract deployment → event detection → webhook delivery → backend processing → data persistence. This is done all using MultiBaas's interface and SDK.
 
 #### Enhanced Developer Understanding
 
